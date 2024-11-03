@@ -2,7 +2,9 @@ import 'package:demo/Home_Screens/HomePage.dart';
 import 'package:demo/auth/Newsapp.dart';
 import 'package:demo/auth/demo.dart';
 import 'package:demo/auth/login.dart';
+import 'package:demo/auth/signinnew.dart';
 import 'package:demo/auth/signup.dart';
+import 'package:demo/auth/signup_new.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -18,7 +20,8 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: HomePage()
+      //home: HomePage()
+        home: SignInPage()
     );
   }
 }

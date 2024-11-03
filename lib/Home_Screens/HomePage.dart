@@ -17,6 +17,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: Row(
           children: [
+            Icon(Icons.arrow_drop_down),
             MyMediumText(title: "Munich Center", isBold: true),
             Icon(Icons.arrow_drop_down),
           ],
