@@ -89,3 +89,141 @@ class MyAccountScreen extends StatelessWidget {
     );
   }
 }
+
+
+import 'package:flutter/material.dart';
+import 'package:scrapapp/Utility/Widget_Helper.dart';
+import 'package:scrapapp/screens/HomePage.dart';
+import 'package:gap/gap.dart';
+
+class Schedulersummary extends StatefulWidget {
+  final DateTime selectedDate;
+  final String selectedSlot;
+  final String TotWeight;
+  final List<Map<String, dynamic>> selecteditems;
+
+  Schedulersummary({
+    Key? key,
+    required this.selectedDate,
+    required this.TotWeight,
+    required this.selectedSlot,
+    required this.selecteditems,
+  }) : super(key: key);
+
+  @override
+  State<Schedulersummary> createState() => _SchedulersummaryState();
+}
+
+class _SchedulersummaryState extends State<Schedulersummary> {
+  final TextEditingController _notescontroller = TextEditingController();
+
+  String _monthName(int month) {
+    const monthNames = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ];
+    return monthNames[month - 1];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: appbar(context, "Schedule Pick Up", "Pick Up Summary"),
+      body: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 20),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Text(
+                  "${widget.selectedDate.day} ${_monthName(widget.selectedDate.month)} ${widget.selectedDate.year}",
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Text(
+                  widget.selectedSlot,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            Container(
+              margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+              height: 160,
+              decoration: BoxDecoration(
+                color: Colors.white,
+              ),
+              child: Wrap(
+                children: widget.selecteditems.map((item) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: Chip(
+                      label: Text(item['title']),
+                      backgroundColor: Color(0xffDBEAE3),
+                      onDeleted: () {
+                        setState(() {
+                          widget.selecteditems.removeWhere((selectedItem) => selectedItem['title'] == item['title']);
+                        });
+                      },
+                      avatar: const Icon(Icons.person),
+                    ),
+                  );
+                }).toList(),
+                spacing: 8,
+              ),
+            ),
+            SizedBox(height: 10,),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+              child: Row(
+                children: [
+                  MyMediumText(title: "Estimate Weight :", isBold: true, color: Colors.black),
+                  Gap(20),
+                  MyMediumText(title: widget.TotWeight, isBold: false, color: Colors.black)
+                ],
+              ),
+            ),
+            SizedBox(height: 10,),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: MyMediumText(title: "Notes", isBold: true, color: Colors.black),
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+              decoration: BoxDecoration(
+                color: Color(0xffE9E9E9),
+                border: Border.all(width: 2, color: Colors.white),
+              ),
+              child: TextFormField(
+                controller: _notescontroller,
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                  border: InputBorder.none,
+                  hintText: "Enter Product Notes",
+                ),
+                maxLines: 4,
+              ),
+            ),
+            MyBottomButton(title: "Schedule Pick Up Now", destination: HomePage()),
+          ],
+        ),
+      ),
+    );
+  }
+}
