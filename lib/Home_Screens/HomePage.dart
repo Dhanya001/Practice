@@ -172,288 +172,6 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-
-import 'package:flutter/material.dart';
-import 'package:table_calendar/table_calendar.dart';
-
-class SchedulePickUpPage extends StatefulWidget {
-  @override
-  _SchedulePickUpPageState createState() => _SchedulePickUpPageState();
-}
-
-class _SchedulePickUpPageState extends State<SchedulePickUpPage> {
-  DateTime _selectedDay = DateTime.now();
-  int? _selectedSlotIndex;
-
-  final List<String> _timeSlots = [
-    "09:00 AM - 12:00 PM",
-    "01:00 PM - 04:00 PM",
-    "05:00 PM - 08:00 PM",
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.green,
-        title: const Text("Schedule Pick Up"),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Pick Up Date & Time-slots",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Calendar
-            TableCalendar(
-              firstDay: DateTime.utc(2022, 1, 1),
-              lastDay: DateTime.utc(2030, 12, 31),
-              focusedDay: _selectedDay,
-              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-              onDaySelected: (selectedDay, focusedDay) {
-                setState(() {
-                  _selectedDay = selectedDay;
-                });
-              },
-              calendarStyle: CalendarStyle(
-                todayDecoration: BoxDecoration(
-                  color: Colors.green.shade200,
-                  shape: BoxShape.circle,
-                ),
-                selectedDecoration: BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              headerStyle: HeaderStyle(
-                formatButtonVisible: false,
-                titleCentered: true,
-                titleTextStyle: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              "Pick a slot",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 10),
-            // Time slots
-            Column(
-              children: List.generate(_timeSlots.length, (index) {
-                return RadioListTile<int>(
-                  value: index,
-                  groupValue: _selectedSlotIndex,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedSlotIndex = value;
-                    });
-                  },
-                  title: Text(_timeSlots[index]),
-                  activeColor: Colors.green,
-                );
-              }),
-            ),
-            const Spacer(),
-            // Next button
-            Center(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  primary: Colors.green,
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                ),
-                onPressed: () {
-                  // Handle Next button press
-                },
-                child: const Text(
-                  "Next",
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-import 'package:flutter/material.dart';
-
-class PickUpSummaryPage extends StatelessWidget {
-  final DateTime selectedDate;
-  final String selectedSlot;
-  final List<String> selectedItems = [
-    "Office Papers",
-    "Cardboard Boxes",
-    "Magazines",
-    "Office Papers",
-    "Cardboard Boxes",
-    "Magazines",
-    "Office Papers",
-    "Cardboard Boxes",
-  ];
-
-  PickUpSummaryPage({required this.selectedDate, required this.selectedSlot});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.green,
-        title: const Text("Schedule Pick Up"),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Pick Up Summary",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Selected Date and Slot
-            Text(
-              "${selectedDate.day} ${_monthName(selectedDate.month)} ${selectedDate.year}",
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              selectedSlot,
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.black54,
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Selected Items Chips
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: selectedItems.map((item) {
-                return Chip(
-                  label: Text(item),
-                  backgroundColor: Colors.green.shade100,
-                  avatar: Icon(Icons.insert_drive_file, size: 18),
-                  deleteIcon: Icon(Icons.close, size: 18),
-                  onDeleted: () {
-                    // Handle delete action for each chip
-                  },
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 20),
-            // Estimated Weight
-            const Text(
-              "Estimated Weight",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: TextField(
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  hintText: "Enter weight",
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Notes
-            const Text(
-              "Notes:",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              height: 100,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: TextField(
-                maxLines: null,
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  hintText: "Enter notes (optional)",
-                ),
-              ),
-            ),
-            const Spacer(),
-            // Schedule Pick Up Now Button
-            Center(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  primary: Colors.green,
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                ),
-                onPressed: () {
-                  // Handle Schedule Pick Up Now action
-                },
-                child: const Text(
-                  "Schedule Pick Up Now",
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _monthName(int month) {
-    const monthNames = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-    ];
-    return monthNames[month - 1];
-  }
-}
-
-
-
-Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (context) => PickUpSummaryPage(
-      selectedDate: _selectedDay,
-      selectedSlot: _timeSlots[_selectedSlotIndex],
-    ),
-  ),
-);
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -470,7 +188,7 @@ class RateCardPickup extends StatefulWidget {
 class _RateCardPickupState extends State<RateCardPickup> {
   final TextEditingController _searchcontroller=TextEditingController();
   List<Map<String, dynamic>> _searchitems=[];
-  // List<String> selectedItem=[];
+  List<Map<String,dynamic>> SelectedItems=[];
   // final List<String> selectedItemTitles = _searchitems.map((item) => item.title).toList();
 
   final List<Map<String, dynamic>> rateItems = [
@@ -496,6 +214,7 @@ class _RateCardPickupState extends State<RateCardPickup> {
     _searchitems=rateItems;
   }
 
+
   void _runFilter(String keyword){
     List<Map<String, dynamic>> results=[];
     if(keyword.isEmpty){
@@ -508,6 +227,18 @@ class _RateCardPickupState extends State<RateCardPickup> {
       _searchitems=results;
     });
   }
+
+  void _toggleSelection(int index) {
+    setState(() {
+      _searchitems[index]['isChecked'] = !_searchitems[index]['isChecked'];
+      if (_searchitems[index]['isChecked']) {
+        SelectedItems.add({'title': _searchitems[index]['title']});
+      } else {
+        SelectedItems.removeWhere((item) => item['title'] == _searchitems[index]['title']);
+      }
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -558,25 +289,30 @@ class _RateCardPickupState extends State<RateCardPickup> {
                     );
                   }):const MyBigText(title: "No result Found",isBold: true,color: Colors.black,),
             ),
-            MyBottomButton(title: "Next",destination: CapturePickup(
-              // selectedItems: _searchitems.map((item)=>item.title).toList(),
-              // selectedItems: selectedItem.toList(),
-            ),),
+            MyBottomButton(
+              title: "Next",
+            destination: CapturePickup(onWeightChanged: (String weight){
+              return weight;
+            },
+            SelectedItems: SelectedItems,),
+            ),
           ],
         ),
       ),
     );
   }
 
+
   Widget _buildRateCardPickUp({
     required int index,
     required String title,
     required String price,
     required String image,
-    required bool isChecked}) {
+    required bool isChecked,
+  }) {
     return GestureDetector(
       onTap: () {
-        
+        _toggleSelection(index);
       },
       child: Container(
         decoration: BoxDecoration(
@@ -586,24 +322,30 @@ class _RateCardPickupState extends State<RateCardPickup> {
         child: Column(
           children: [
             Expanded(
-                child: Container(
-                    margin: EdgeInsets.symmetric(vertical: 5,horizontal: 5),
-                  width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      image: DecorationImage(image: AssetImage(image,),fit: BoxFit.cover,)
-                    ),
-                    )),
+              child: Container(
+                margin: EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  image: DecorationImage(
+                    image: AssetImage(image),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            ),
             Container(
-              margin: EdgeInsets.symmetric(vertical: 5,horizontal: 10),
+              margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
               child: Align(
                 alignment: Alignment.topLeft,
-                child: Text(title,
+                child: Text(
+                  title,
                   style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                ),
+                    fontWeight: FontWeight.w700,
+                  ),
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis,),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
             Container(
@@ -612,36 +354,37 @@ class _RateCardPickupState extends State<RateCardPickup> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    Text(price,
+                    Text(
+                      price,
                       style: TextStyle(
                         color: Theme.of(context).primaryColor,
                         fontWeight: FontWeight.w700,
-                      ),),
+                      ),
+                    ),
                     Checkbox(
-                        checkColor: Colors.white,
-                        activeColor: Colors.green,
-                        value: isChecked,
-                        tristate: true,
-                        shape: CircleBorder(),
-                        onChanged: (bool? newvalue){
-                      setState(() {
-                        _searchitems[index]['isChecked'] = newvalue??false;
-                      });
-                    })
+                      checkColor: Colors.white,
+                      activeColor: Colors.green,
+                      value: isChecked,
+                      tristate: false,
+                      shape: CircleBorder(),
+                      onChanged: (bool? newvalue) {
+                        _toggleSelection(index);
+                        // setState(() {
+                        //   _searchitems[index]['isChecked'] = newvalue ?? false;
+                        // });
+                      },
+                    ),
                   ],
                 ),
               ),
             ),
-            SizedBox(height: 10,)
+            SizedBox(height: 10),
           ],
         ),
-
       ),
     );
   }
 }
-
-
 
 import 'dart:io';
 
@@ -652,8 +395,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:scrapapp/screens/CalenderPickUp.dart';
 
 class CapturePickup extends StatefulWidget {
+  final Function(String) onWeightChanged;
+  final List<Map<String, dynamic>> SelectedItems;
   // final List<String> selectedItems;
-  const CapturePickup({super.key});
+  const CapturePickup({super.key, required this.onWeightChanged, required this.SelectedItems});
 
   @override
   State<CapturePickup> createState() => _CapturePickupState();
@@ -676,6 +421,11 @@ class _CapturePickupState extends State<CapturePickup> {
           print("Empty");
         }
     });
+  }
+
+  void _onWeightChanged(String value) {
+    widget.onWeightChanged(value);
+    // print("${widget.SelectedItems[index]['title']}");
   }
 
   @override
@@ -741,11 +491,13 @@ class _CapturePickupState extends State<CapturePickup> {
                   border: InputBorder.none,
                   hintText: "Enter Product Estimate Weight",
                 ),
+                onChanged: _onWeightChanged,
               ),
             ),
             Gap(120),
             MyBottomButton(title: "Next",destination: Calenderpickup(
-              TotWeight: _weightcontroller.text,),),
+              TotWeight: _weightcontroller.text,
+            selectedItems: widget.SelectedItems,),),
 
           ],
         ),
@@ -769,9 +521,9 @@ import 'package:table_calendar/table_calendar.dart';
 
 class Calenderpickup extends StatefulWidget {
   final String TotWeight;
-  // final List<String> selectedItems;
+  final List<Map<String, dynamic>> selectedItems;
 
-  const Calenderpickup({super.key, required this.TotWeight});
+  const Calenderpickup({super.key, required this.TotWeight, required this.selectedItems});
   @override
   State<Calenderpickup> createState() => _CalenderpickupState();
 }
@@ -902,7 +654,7 @@ class _CalenderpickupState extends State<Calenderpickup> {
                   selectedDate: _focusedDay,
                   TotWeight: "${widget.TotWeight}",
                   selectedSlot: _timeslot[_selectedslot!],
-                  selecteditems: [],
+                  selecteditems: widget.selectedItems,
                   // selectedSlot: _timeslot[_selectedslot]
               )),
                 ],
@@ -913,21 +665,6 @@ class _CalenderpickupState extends State<Calenderpickup> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 import 'package:flutter/material.dart';
 import 'package:scrapapp/Utility/Widget_Helper.dart';
@@ -954,11 +691,13 @@ class _SchedulersummaryState extends State<Schedulersummary> {
       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
     ];
     return monthNames[month - 1];
+
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: appbar(context, "Schedule Pick Up", "Pick Up Summary"),
       body: SingleChildScrollView(
         child: Column(
@@ -991,15 +730,110 @@ class _SchedulersummaryState extends State<Schedulersummary> {
                 ),
               ),
             ),
-            SizedBox(height: 10,),
+      // Container(
+      //   margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+      //   height: 160,
+      //   decoration: BoxDecoration(
+      //     color: Colors.white,
+      //     border: Border.all(color: Colors.grey, width: 2),
+      //   ),
+      //   child: ListView.builder(
+      //     itemCount: widget.selecteditems.length,
+      //     itemBuilder: (context, index) {
+      //     final item = widget.selecteditems[index];
+      //     return ListTile(
+      //       title: Text(item['title']),
+      //     );
+      //     },
+      //     ),
+      //     ),
             Container(
               margin: EdgeInsets.symmetric(vertical: 10,horizontal: 10),
               height: 160,
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border.all(color: Colors.grey,width: 2)
               ),
-              child: Text("${widget.selecteditems}"),
+              // child: GridView.builder(
+              //     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              //         crossAxisCount: 2,
+              //       crossAxisSpacing: 16.0,
+              //       mainAxisSpacing: 16.0,
+              //       childAspectRatio: 2/3,
+              //     ),
+              //     itemCount: widget.selecteditems.length,
+              //     itemBuilder: (context,index){
+              //       final item = widget.selecteditems[index];
+              //       return Container(
+              //         decoration: BoxDecoration(
+              //           color: Colors.white,
+              //           borderRadius: BorderRadius.circular(12.0),
+              //         ),
+              //         child: Column(
+              //           children: [
+              //             Container(
+              //               margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+              //               child: Align(
+              //                 alignment: Alignment.topLeft,
+              //                 child:
+              //                 Text(item['title']),
+              //               ),
+              //             ),
+              //           ],
+              //         ),
+              //       );
+              //     }),
+
+              child: ListView.builder(
+                  itemCount:1,
+                  itemBuilder: (context,index){
+                    final item = widget.selecteditems;
+                    //return   ListTile(
+                    //   title:Row(
+                    //     children: [
+                    //       Container(
+                    //         decoration:BoxDecoration(
+                    //           borderRadius: BorderRadius.circular(16),
+                    //           color: Color(0xffDBEAE3),
+                    //         ),
+                    //           child: Padding(
+                    //             padding: const EdgeInsets.all(8.0),
+                    //             child: Text(item['title']),
+                    //           ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    //
+                    //   // trailing: Wrap(
+                    //   //   spacing: 12,
+                    //   //   children: <Widget>[
+                    //   //     Icon(Icons.close),
+                    //   //   ],
+                    //   // ),
+                    // );
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: Wrap(
+                        children: widget.selecteditems.
+                        map((item)=>
+                            Chip(label: Text(item['title']),
+                              backgroundColor: Color(0xffDBEAE3),
+                          onDeleted: (){
+                          setState(() {
+                            widget.selecteditems.removeWhere((item) => item['title'] == widget.selecteditems[index]['title']!);
+                          });
+                          debugPrint("do nothing");
+                        },avatar: Icon(Icons.person),)
+                        ).toList(),
+                        spacing: 8,
+                      ),
+                    );
+
+
+
+                    //   Container(
+                    //   child: Text("title: ${widget.selecteditems[index]['title']}"),
+                    // );
+                  }),
             ),
             SizedBox(height: 10,),
             Padding(
@@ -1012,7 +846,7 @@ class _SchedulersummaryState extends State<Schedulersummary> {
                 ],
               ),
             ),
-        
+
             SizedBox(height: 10,),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10,horizontal: 10),
@@ -1028,8 +862,8 @@ class _SchedulersummaryState extends State<Schedulersummary> {
             Container(
               margin: const EdgeInsets.symmetric(vertical:10,horizontal: 10),
               decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(width: 2,color: Colors.grey),
+                color: Color(0xffE9E9E9),
+                border: Border.all(width: 2,color: Colors.white),
                 // borderRadius: BorderRadius.circular(16)
               ),
               child: TextFormField(
@@ -1041,7 +875,7 @@ class _SchedulersummaryState extends State<Schedulersummary> {
                 ),maxLines: 4,
               ),
             ),
-            MyBottomButton(title: "Schedule Pick Up Now", destination: HomePage())
+            MyBottomButton(title: "Schedule Pick Up Now", destination: HomePage()),
           ],
         ),
       ),
@@ -1050,346 +884,205 @@ class _SchedulersummaryState extends State<Schedulersummary> {
   }
 }
 
-
-//
-// Navigator.push(
-// context,
-// MaterialPageRoute(
-// builder: (context) => CalendarPickupPage(
-// selectedItems: selectedItems,
-// ),
-// ),
-// );
-//
-//
-// class CalendarPickupPage extends StatelessWidget {
-// final List<String> selectedItems;
-//
-// CalendarPickupPage({required this.selectedItems});
-//
-// @override
-// Widget build(BuildContext context) {
-// // Your existing code for CalendarPickupPage
-// }
-// }
-//
-//
-// Navigator.push(
-// context,
-// MaterialPageRoute(
-// builder: (context) => SummaryPickup(
-// selectedDate: selectedDate, // Assuming you have this in CalendarPickupPage
-// selectedSlot: selectedSlot, // Assuming you have this in CalendarPickupPage
-// selectedItems: selectedItems,
-// ),
-// ),
-// );
-//
-//
-// for title
-//
-// // In RateCardPickupPage, create a list of titles
-// final List<String> selectedItemTitles = selectedItems.map((item) => item.title).toList();
-//
-//
-// Navigator.push(
-// context,
-// MaterialPageRoute(
-// builder: (context) => CalendarPickupPage(
-// selectedItemTitles: selectedItemTitles,
-// ),
-// ),
-// );
-//
-//
-// Navigator.push(
-// context,
-// MaterialPageRoute(
-// builder: (context) => SummaryPickup(
-// selectedDate: selectedDate,
-// selectedSlot: selectedSlot,
-// selectedItemTitles: selectedItemTitles,
-// ),
-// ),
-// );
 import 'package:flutter/material.dart';
 import 'package:scrapapp/Utility/Widget_Helper.dart';
-import 'package:scrapapp/screens/OTP_Screen.dart';
-import 'package:sign_in_button/sign_in_button.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gap/gap.dart';
+import 'package:scrapapp/screens/HomePage.dart';
+import 'package:scrapapp/screens/Rate_card_details.dart';
 
-
-class SignIn extends StatefulWidget {
-  const SignIn({super.key});
-
+class RateCard extends StatefulWidget {
   @override
-  State<SignIn> createState() => _SignInState();
+  State<RateCard> createState() => _RateCardState();
 }
 
-class _SignInState extends State<SignIn> {
-  final TextEditingController _phonecontroller=TextEditingController();
+class _RateCardState extends State<RateCard> {
+  final TextEditingController _searchcontroller=TextEditingController();
+  List<Map<String, dynamic>> _searchitems=[];
+  bool isSearchClicked=false;
 
-  //we have create global key for our form
-  final formkey=GlobalKey<FormState>();
+  final List<Map<String, dynamic>> rateCardItems = [
+    {'title': 'Paper paper', 'price': '₹1200/kg', 'image': 'assets/Newspaper3.png','destination':RateCardDetails(),},
+    {'title': 'Plastic Bottles', 'price': '₹10/kg', 'image': 'assets/Bottle.png','destination':HomePage(),},
+    {'title': 'Aluminum Cans', 'price': '₹28/kg', 'image': 'assets/Newspaper3.png','destination':HomePage(),},
+    {'title': 'E-Waste', 'price': '₹50/kg', 'image': 'assets/Bottle.png','destination':HomePage(),},
+    {'title': 'Newspapeskslr', 'price': '₹12/kg', 'image': 'assets/Newspaper3.png','destination':HomePage(),},
+    {'title': 'Plastic Bottlesfdn;fjdn', 'price': '₹10/kg', 'image': 'assets/Bottle.png','destination':HomePage(),},
+    {'title': 'Aluminum Cans', 'price': '₹28/kg', 'image': 'assets/Newspaper3.png','destination':HomePage(),},
+    {'title': 'E-Waste', 'price': '₹50/kg', 'image': 'assets/Bottle.png','destination':HomePage(),},
+    {'title': 'Newspapeskslr', 'price': '₹12/kg', 'image': 'assets/Newspaper3.png','destination':HomePage(),},
+    {'title': 'Plastic Bottlesfdn;fjdn', 'price': '₹10/kg', 'image': 'assets/Bottle.png','destination':HomePage(),},
+    {'title': 'Aluminum Cans', 'price': '₹28/kg', 'image': 'assets/Newspaper3.png','destination':HomePage(),},
+    {'title': 'E-Waste', 'price': '₹50/kg', 'image': 'assets/Bottle.png','destination':HomePage(),},
+  ];
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _searchitems=rateCardItems;
+  }
+  void _runFilter(String keyword){
+    List<Map<String, dynamic>> results=[];
+    if(keyword.isEmpty){
+      results=rateCardItems;
+    }else{
+      // results=rateItems.where((user=>user["title"])).toList()
+      results=rateCardItems.where((user)=>user["title"]!.toLowerCase().contains(keyword.toLowerCase())).toList();
+    }
+    setState(() {
+      _searchitems=results;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-            ),
-            child: IconButton(
-              icon: Icon(Icons.chevron_left, color: Colors.black),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
+          child: IconButton(
+            icon: Icon(Icons.arrow_back_sharp, color: Colors.black),
+            onPressed: () => Navigator.of(context).pop(),
           ),
         ),
-        title: Text("Sign In",style: TextStyle(
+        title: isSearchClicked ? Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: TextFormField(
+            controller: _searchcontroller,
+            decoration: const InputDecoration(
+              suffixIcon: Icon(Icons.search),
+              contentPadding: EdgeInsets.symmetric(vertical: 10,horizontal: 20),
+              //border: OutlineInputBorder(),
+              border: InputBorder.none,
+              hintText: "Search",
+              //labelText: "Location",
+            ),
+            onChanged: (value)=>_runFilter(value),
+          ),
+        ):Text("Rate Card",
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
             fontSize: 20,
-            fontWeight: FontWeight.bold),),centerTitle: true,
+            color: Colors.black,
+          ),),
+        centerTitle: true,
+        actions: [
+          IconButton(onPressed: () {
+            setState(() {
+              isSearchClicked=!isSearchClicked;
+              if(!isSearchClicked){
+                _searchcontroller.clear();
+              }
+            });
+          },
+              icon: Icon(isSearchClicked?Icons.close:Icons.search_sharp))
+        ],
       ),
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SingleChildScrollView(
+      // appBar: appbar(context, "Schedule Pick Up", "Select  Products for pick up"),
+      body: Padding(
+        padding: const EdgeInsets.all(8),
         child: Column(
           children: [
-            //Title
-            SizedBox(height: 20,),
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 10),
-              alignment: Alignment.topLeft,
-              child: MyBigText(
-                title: "Welcome To Scrap App",
-                isBold: true,),
-            ),
-            SizedBox(height: 10,),
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 10),
-              alignment: Alignment.topLeft,
-              child: MySmallText(
-                title: "Hey you’re back, fill in your details to get back in",
-                color: Colors.black87,
-                isBold: false,),
-            ),
-
-            //Phone Field
-            SizedBox(height: 10,),
-            Form(
-              key: formkey,
-              child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 10,horizontal: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 10,vertical: 6),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: Colors.white,
-                ),
-                child: TextFormField(
-                  controller: _phonecontroller,
-                  keyboardType: TextInputType.phone,
-                  validator: (value){
-                    if(value!.isEmpty){
-                      return "Phone Number is required.";
-                    }else if(!RegExp(r"^[0-9]{10,15}$").hasMatch(value)){
-                      return "Please enter valid phone number";
-                    }
-                    return null;
-                  },
-                  decoration: const InputDecoration(
-                    icon: Icon(Icons.person),
-                    border: InputBorder.none,
-                    hintText: "Enter Your Phone Number.",
-                    labelText: "Phone Number",
-                  ),
-                ),
+            Expanded(
+              child: _searchitems.isNotEmpty?GridView.builder(gridDelegate:
+              SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16.0,
+                mainAxisSpacing: 16.0,
+                childAspectRatio: 2/3,
               ),
-            ),
-
-            SizedBox(height: 20,),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SignInButton(
-                  Buttons.apple,
-                  mini: true,
-                  onPressed: () {},
-                ),
-                SignInButton(
-                  Buttons.facebook,
-                  mini: true,
-                  onPressed: () {},
-                ),
-
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.rectangle,
-                    color: Colors.white,
-                  ),
-                  child: IconButton(onPressed: () {
-
-                  }, icon: Image.asset('assets/icons/google.png',width: 32,)),
-                ),
-              ],
-            ),
-            Container(
-              width: double.infinity,
-              margin: EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                    borderRadius: BorderRadius.circular(20),
-                ),
-              child: TextButton(onPressed: () async{
-                if (formkey.currentState!.validate()) {
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setString('phone', _phonecontroller.text);
-                Navigator.push(context, MaterialPageRoute(builder: (context)=>OtpScreen()));
-                }
-              },
-                  child: Text("Send OTP",
-                    style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold),)),
+                  itemCount: _searchitems.length,
+                  itemBuilder: (context,index){
+                    final item = _searchitems[index];
+                    return _buildRateCardPickUp(
+                      title: item['title']!,
+                      price: item['price']!,
+                      image: item['image']!,
+                      destination: item['destination']!
+                      // destination: item['destination']!
+                    );
+                  }):const MyBigText(title: "No result Found",isBold: true,color: Colors.black,),
             ),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildRateCardPickUp({required String title, required String price, required String image,required Widget destination}) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (context)=>destination));
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12.0),
+          // image: DecorationImage(
+          //   image: AssetImage(image),
+          //   fit: BoxFit.cover,
+          //   // colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.3), BlendMode.darken),
+          // ),
+        ),
+        child: Column(
+          children: [
+            Expanded(
+                child: Container(
+                  margin: EdgeInsets.symmetric(vertical: 5,horizontal: 5),
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      image: DecorationImage(image: AssetImage(image,),fit: BoxFit.cover,)
+                  ),
+                )),
+            Container(
+              margin: EdgeInsets.symmetric(vertical: 5,horizontal: 10),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Text(title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 17
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,),
+              ),
+            ),
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 10),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Text(price,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,),
+              ),
+            ),
+            SizedBox(height: 10,)
+          ],
+        ),
+
+      ),
+    );
+  }
 }
 
-// @override
-// Widget build(BuildContext context) {
-//   return Scaffold(
-//     body: Stack(
-//       children: [
-//         SingleChildScrollView(
-//           child: Column(
-//             children: [
-//               // Title
-//               SizedBox(height: 20,),
-//               Container(
-//                 margin: EdgeInsets.symmetric(horizontal: 10),
-//                 alignment: Alignment.topLeft,
-//                 child: MyBigText(
-//                   title: "Welcome To Scrap App",
-//                   isBold: true,
-//                 ),
-//               ),
-//               SizedBox(height: 10,),
-//               Container(
-//                 margin: EdgeInsets.symmetric(horizontal: 10),
-//                 alignment: Alignment.topLeft,
-//                 child: MySmallText(
-//                   title: "Hey you’re back, fill in your details to get back in",
-//                   color: Colors.black87,
-//                   isBold: false,
-//                 ),
-//               ),
-//
-//               // Phone Field
-//               SizedBox(height: 10,),
-//               Form(
-//                 key: formkey,
-//                 child: Container(
-//                   margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-//                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-//                   decoration: BoxDecoration(
-//                     borderRadius: BorderRadius.circular(16),
-//                     color: Colors.white,
-//                   ),
-//                   child: TextFormField(
-//                     controller: _phonecontroller,
-//                     keyboardType: TextInputType.phone,
-//                     validator: (value) {
-//                       if (value!.isEmpty) {
-//                         return "Phone Number is required.";
-//                       } else if (!RegExp(r"^[0-9]{10,15}$").hasMatch(value)) {
-//                         return "Please enter valid phone number";
-//                       }
-//                       return null;
-//                     },
-//                     decoration: const InputDecoration(
-//                       icon: Icon(Icons.person),
-//                       border: InputBorder.none,
-//                       hintText: "Enter Your Phone Number.",
-//                       labelText: "Phone Number",
-//                     ),
-//                   ),
-//                 ),
-//               ),
-//
-//               SizedBox(height: 20,),
-//               Row(
-//                 mainAxisAlignment: MainAxisAlignment.center,
-//                 children: [
-//                   SignInButton(
-//                     Buttons.apple,
-//                     mini: true,
-//                     onPressed: () {},
-//                   ),
-//                   SignInButton(
-//                     Buttons.facebook,
-//                     mini: true,
-//                     onPressed: () {},
-//                   ),
-//                   Container(
-//                     width: 38,
-//                     height: 38,
-//                     decoration: BoxDecoration(
-//                       shape: BoxShape.rectangle,
-//                       color: Colors.white,
-//                     ),
-//                     child: IconButton(
-//                       onPressed: () {},
-//                       icon: Image.asset('assets/icons/google.png', width: 32,),
-//                     ),
-//                   ),
-//                 ],
-//               ),
-//             ],
-//           ),
-//         ),
-//         // Send OTP Button at the bottom
-//         Positioned(
-//           left: 10,
-//           right: 10,
-//           bottom: 20, // Adjust this value to change the vertical position of the button
-//           child: Container(
-//             width: double.infinity,
-//             decoration: BoxDecoration(
-//               color: Theme.of(context).primaryColor,
-//               borderRadius: BorderRadius.circular(20),
-//             ),
-//             child: TextButton(
-//               onPressed: () async {
-//                 if (formkey.currentState!.validate()) {
-//                   final prefs = await SharedPreferences.getInstance();
-//                   await prefs.setString('phone', _phonecontroller.text);
-//                   Navigator.push(context, MaterialPageRoute(builder: (context) => OtpScreen()));
-//                 }
-//               },
-//               child: Text(
-//                 "Send OTP",
-//                 style: TextStyle(
-//                   fontSize: 20,
-//                   color: Colors.white,
-//                   fontWeight: FontWeight.bold,
-//                 ),
-//               ),
-//             ),
-//           ),
-//         ),
-//       ],
-//     ),
-//   );
-// }
+
+
+
+
+
+
+
+
 
 
