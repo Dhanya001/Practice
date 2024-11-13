@@ -227,3 +227,136 @@ class _SchedulersummaryState extends State<Schedulersummary> {
     );
   }
 }
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'My Pick Ups',
+      theme: ThemeData(
+        primarySwatch: Colors.green,
+      ),
+      home: MyPickUpsPage(),
+    );
+  }
+}
+
+class MyPickUpsPage extends StatefulWidget {
+  @override
+  _MyPickUpsPageState createState() => _MyPickUpsPageState();
+}
+
+class _MyPickUpsPageState extends State<MyPickUpsPage>
+    with SingleTickerProviderStateMixin {
+  TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('My Pick Ups'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: [
+            Tab(text: 'Upcoming'),
+            Tab(text: 'Completed'),
+            Tab(text: 'Canceled'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          UpcomingPickUps(),
+          CompletedPickUps(),
+          CanceledPickUps(),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.payment),
+            label: 'Payments',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.refresh),
+            label: 'Refresh',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class UpcomingPickUps extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      itemCount: 4,
+      itemBuilder: (context, index) {
+        return Card(
+ child: ListTile(
+            title: Text('Upcoming Pick Up ${index + 1}'),
+            subtitle: Text('Details about upcoming pick up ${index + 1}'),
+            trailing: Icon(Icons.arrow_forward),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class CompletedPickUps extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      itemCount: 4,
+      itemBuilder: (context, index) {
+        return Card(
+          child: ListTile(
+            title: Text('Completed Pick Up ${index + 1}'),
+            subtitle: Text('Details about completed pick up ${index + 1}'),
+            trailing: Icon(Icons.check),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class CanceledPickUps extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      itemCount: 4,
+      itemBuilder: (context, index) {
+        return Card(
+          child: ListTile(
+            title: Text('Canceled Pick Up ${index + 1}'),
+            subtitle: Text('Details about canceled pick up ${index + 1}'),
+            trailing: Icon(Icons.cancel),
+          ),
+        );
+      },
+    );
+  }
+}
