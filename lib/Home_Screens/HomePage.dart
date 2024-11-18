@@ -1077,6 +1077,438 @@ class _RateCardState extends State<RateCard> {
 }
 
 
+import 'package:eureka/fragments/outlets/outletSelectionView.dart';
+import 'package:eureka/util/components/appbar.dart';
+import 'package:flutter/material.dart';
+import 'package:eureka/util/constants.dart' as constants;
+import 'package:eureka/global_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class OutletSelection extends StatefulWidget {
+  // final int beat_id;
+  const OutletSelection({super.key});
+
+
+  @override
+  State<OutletSelection> createState() => _OutletSelectionState();
+}
+
+class _OutletSelectionState extends State<OutletSelection> {
+
+  List<Map<String, dynamic>> beats = [];
+  List<Map<String, dynamic>> daysPlan = [];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: constants.scaffoldColor,
+      appBar: appbar('Outlet'),
+      body: Column(
+        children: [
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.all(16.0),
+                itemCount: 4,
+                itemBuilder: (context, index) {
+                  return BeatCard(beatName: "Yo",
+                    // onSkipPressed: (){},
+                    onStartPressed: (){
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context)=>OutletSelectionViewPage(
+                            outletName: '${'yo'}',
+                            outletId: 0)));
+                    },
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class BeatCard extends StatelessWidget {
+  final String beatName;
+  final VoidCallback? onStartPressed;
+  const BeatCard({super.key, required this.beatName, this.onStartPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return  Card(
+        shadowColor: Colors.black,
+        margin: EdgeInsets.only(bottom: 16.0),
+        child: customListTile(
+          beatName,
+          [
+            if (onStartPressed != null)
+              customElevatedButton(
+                onStartPressed!,
+                'Start',
+              ),
+            // if (onSkipPressed != null) SizedBox(width: 8.0),
+            // if (onSkipPressed != null)
+            // // ElevatedButton(onPressed: onSkipPressed!, child: Text('Skip')),
+            //   customElevatedButton(onSkipPressed!, 'Skip'),
+            // if (onSkipPressed == null && onStartPressed == null)
+            //   SizedBox(width: 8.0),
+            // if (onSkipPressed == null && onStartPressed == null)
+            //   Text('Skipped'),
+          ],
+        )
+
+      // ListTile(
+      //   shape: OutlineInputBorder(
+      //       borderRadius: BorderRadius.circular(10),
+      //       borderSide: BorderSide(color: Colors.transparent)),
+      //   tileColor: Colors.white,
+      //   title: Text(beatName),
+      //   trailing: Row(
+      //     mainAxisSize: MainAxisSize.min,
+      //     children: [
+      //       if (onStartPressed != null)
+      //         customElevatedButton(
+      //           onStartPressed!,
+      //           'Start',
+      //         ),
+      //       if (onSkipPressed != null) SizedBox(width: 8.0),
+      //       if (onSkipPressed != null)
+      //         // ElevatedButton(onPressed: onSkipPressed!, child: Text('Skip')),
+      //         customElevatedButton(onSkipPressed!, 'Skip'),
+      //       if (onSkipPressed == null && onStartPressed == null)
+      //         SizedBox(width: 8.0),
+      //       if (onSkipPressed == null && onStartPressed == null)
+      //         Text('Skipped'),
+      //     ],
+      //   ),
+      // ),
+    );
+  }
+}
+
+
+import 'dart:async';
+import 'package:eureka/util/components/OutstandingDialog.dart';
+import 'package:eureka/util/components/appbar.dart';
+import 'package:flutter/material.dart';
+import 'package:eureka/util/components/visibilityDialog.dart';
+import 'package:eureka/util/components/sohDialog.dart';
+import 'package:eureka/util/components/commentsDialog.dart';
+import 'package:eureka/fragments/daysplan/addItemList.dart';
+import 'package:eureka/fragments/daysplan/viewOrder.dart';
+import 'package:eureka/global_helper.dart';
+import 'package:eureka/timer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:eureka/location.dart';
+import 'package:eureka/util/constants.dart' as constants;
+
+class OutletSelectionViewPage extends StatefulWidget {
+  final String outletName;
+  // final int beatId;
+  final int outletId;
+
+  OutletSelectionViewPage(
+      {required this.outletName, required this.outletId});
+
+  @override
+  State<OutletSelectionViewPage> createState() => _OutletSelectionViewPageState();
+}
+
+class _OutletSelectionViewPageState extends State<OutletSelectionViewPage> {
+  bool isDataLoaded = false;
+  final globalHelper = GlobalHelper();
+  List<Map<String, dynamic>> orders = [];
+
+  @override
+  void initState() {
+    // print(widget.beatId);
+    print(widget.outletId);
+    print(widget.outletName);
+
+    // LocationService.checkLocationPermission(context);
+
+    super.initState();
+    timerController = TimerController(
+      duration: Duration(seconds: constants.refTime),
+      callback: initializeData,
+    )..startPeriodic();
+    initializeData();
+  }
+
+  Future<void> initializeData() async {
+    try {
+      final response = await globalHelper.get_orders(widget.outletId);
+      if (mounted) {
+        setState(() {
+          orders = List<Map<String, dynamic>>.from(response['orders']);
+        });
+        isDataLoaded = true;
+      }
+    } catch (e) {
+      print('Error: $e');
+    } finally {
+      await Future.delayed(Duration(seconds: constants.delayedTime));
+    }
+  }
+
+  @override
+  void dispose() {
+    timerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: constants.scaffoldColor,
+      // import 'package:eureka/util/constants.dart'as constant;
+      appBar: appbar(widget.outletName),
+      // AppBar(
+      //   title: Text(widget.outletName),
+      //   leading: IconButton(
+      //     icon: Icon(Icons.arrow_back),
+      //     onPressed: () {
+      //       Navigator.pop(context);
+      //     },
+      //   ),
+      // ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (!isDataLoaded)
+              Center(child: CircularProgressIndicator())
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: customElevatedButton(
+                          () async {
+                        // Handle end call action
+                        // var sharedPref = await SharedPreferences.getInstance();
+                        // var user_id = sharedPref.getInt('user_id');
+                        // var postedData = {
+                        //   'user_id': user_id,
+                        //   'outlet_id': widget.outletId,
+                        //   // 'beat_id': widget.beatId,
+                        //   'is_submit': 1
+                        // };
+                        //
+                        // showDialog(
+                        //   context: context,
+                        //   builder: (BuildContext context) =>
+                        //       Center(child: CircularProgressIndicator()),
+                        // );
+                        // var res = await globalHelper
+                        //     .update_outlet_Selection(postedData);
+                        //
+                        // if (res['success'] != null) {
+                        //   constants.Notification(res['success']);
+                        //   Navigator.pop(context);
+                        //   Navigator.pop(context);
+                        // } else if (res['error'] != null) {
+                        //   constants.Notification(res['error']);
+                        //   Navigator.pop(context);
+                        // }
+                      },
+                      'End Call',
+                    ),
+                  ),
+                  SizedBox(
+                    width: 16,
+                  ),
+                  Expanded(
+                    child: customElevatedButton(
+                            () {
+                          // _showSOHDialog(context);
+                        },
+                        'SOH'),
+                  ),
+                ],
+              ),
+            SizedBox(
+              height: 8,
+            ),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  customElevatedButton(
+                        () {
+                      // _showVisibilityDialog(context);
+                    },
+                    'Visibility',
+                  ),SizedBox(width: 10,),
+                  customElevatedButton(
+                        () {
+                      // _showOutstandingDialog(context);
+                    },
+
+                    'Outstanding',
+
+                  ),SizedBox(width: 10,),
+                  customElevatedButton(
+                        () {
+                      // _showCommentsDialog(context);
+                    },
+
+                    'Comments',
+
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 16.0),
+            Center(
+                child: Text(
+                  'Orders',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                )),
+            SizedBox(height: 16.0),
+            Expanded(
+              child: ListView.builder(
+                itemCount: orders.length, // Replace with your data list length,
+                itemBuilder: (context, index) {
+                  final order = orders[index];
+                  // Replace with your card widget
+                  return Card(color: Colors.white,
+                    child: ListTile(
+                      title: Text(order['bill_no']),
+                      trailing:
+                      Text(constants.formatDate(order['bill_date']) ?? ''),
+                      onTap: () {
+                        print('kishor');
+                        print(order.toString());
+                        // Handle card tap, navigate to another page
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+
+                            // settings: RouteSettings(arguments: response),
+                            builder: (context) => ViewOrder(
+                                outletId: widget.outletId,
+                                orderId: order['order_booking_id']),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            )
+          ],
+        ),
+      ),
+
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+
+      floatingActionButton: customFloatingActionButton(
+            () async {
+          // Handle adding orders action
+
+          final response = await globalHelper.update_order(widget.outletId);
+
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(
+          //     // settings: RouteSettings(arguments: response),
+          //     builder: (context) =>
+          //     // OrderBookingEditPage(
+          //     //     outletId: widget.outletId, orderId: response['order_id']),
+          //     AddItemList(
+          //         outletId: widget.outletId,
+          //         isOg: false,
+          //         orderId: response['order_id']),
+          //   ),
+          // );
+        },
+
+      ),
+    );
+  }
+
+  // void _showVisibilityDialog(BuildContext context) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return VisibilityDialog(outletID: widget.outletId);
+  //     },
+  //   );
+  // }
+
+  // void _showSOHDialog(BuildContext context) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return SohDialog(outletID: widget.outletId);
+  //     },
+  //   );
+  // }
+
+  // void _showCommentsDialog(BuildContext context) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return CommentsDialog(outletID: widget.outletId);
+  //     },
+  //   );
+  // }
+
+  // void _showOutstandingDialog(BuildContext context) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return OutstandingDialog(outletID: widget.outletId);
+  //     },
+  //   );
+  // }
+}
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: BeatsPage(),
+    );
+  }
+}
+
+class BeatsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Day's Plan"),
+        centerTitle: true,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
+      body: BeatsList(),
+    );
+  }
+}
+
+class BeatsList extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return OutletSelectionViewPage(
+      outletName: "Sample Outlet",
+      outletId: 0,
+      // beatId: 0,
+    ); // Replace with your data
+  }
+}
 
 
 
