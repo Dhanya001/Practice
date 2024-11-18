@@ -387,3 +387,197 @@ class _LocationPageState extends State<LocationPage> {
     );
   }
 }
+import 'package:flutter/material.dart';
+import 'package:pinput/pinput.dart';
+import 'package:scrapapp/screens/Allow_location_Page.dart';
+import 'package:smart_auth/smart_auth.dart';
+
+class OtpScreen extends StatefulWidget {
+  const OtpScreen({super.key});
+
+  @override
+  State<OtpScreen> createState() => _OtpScreenState();
+}
+
+class _OtpScreenState extends State<OtpScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        leading: IconButton(
+          icon: Icon(Icons.chevron_left, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text(
+          "Sign In",
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            Container(
+              alignment: Alignment.topLeft,
+              margin: const EdgeInsets.symmetric(horizontal: 10),
+              child: const Text(
+                "Verification",
+                style: TextStyle(
+                  fontSize: 28,
+                  color: Color(0xff2D6A4F),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            Container(
+              alignment: Alignment.topLeft,
+              margin: const EdgeInsets.symmetric(horizontal: 10),
+              child: const Text(
+                "We sent the verification code to your number",
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const FractionallySizedBox(
+              widthFactor: 1,
+              child: OTP_Pinput(),
+            ),
+            const Spacer(),
+            Container(
+              margin: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AllowLocationPage(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  "Continue",
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class OTP_Pinput extends StatefulWidget {
+  const OTP_Pinput({Key? key}) : super(key: key);
+
+  @override
+  State<OTP_Pinput> createState() => _OTP_PinputState();
+}
+
+class _OTP_PinputState extends State<OTP_Pinput> {
+  final TextEditingController pinController = TextEditingController();
+  final FocusNode focusNode = FocusNode();
+  String? errorText;
+  final String correctPin = "2222";
+
+  @override
+  void dispose() {
+    pinController.dispose();
+    focusNode.dispose();
+    super.dispose();
+  }
+
+  void validatePin(String value) {
+    if (value == correctPin) {
+      setState(() {
+        errorText = null; // Clear error when the PIN is correct
+      });
+    } else {
+      setState(() {
+        errorText = "Pin is incorrect"; // Show error if the PIN is incorrect
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const focusedBorderColor = Color(0xff2D6A4F);
+    const borderColor = Color(0xff2D6A4F);
+
+    final defaultPinTheme = PinTheme(
+      width: 56,
+      height: 56,
+      textStyle: const TextStyle(
+        fontSize: 22,
+        color: Color.fromRGBO(30, 60, 87, 1),
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(19),
+        border: Border.all(color: borderColor),
+      ),
+    );
+
+    return Column(
+      children: [
+        Pinput(
+          controller: pinController,
+          focusNode: focusNode,
+          length: 4,
+          defaultPinTheme: defaultPinTheme,
+          separatorBuilder: (index) => const SizedBox(width: 8),
+          hapticFeedbackType: HapticFeedbackType.lightImpact,
+          onChanged: validatePin,
+          cursor: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(bottom: 9),
+                width: 22,
+                height: 1,
+                color: focusedBorderColor,
+              ),
+            ],
+          ),
+          focusedPinTheme: defaultPinTheme.copyWith(
+            decoration: defaultPinTheme.decoration!.copyWith(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: focusedBorderColor),
+            ),
+          ),
+          submittedPinTheme: defaultPinTheme.copyWith(
+            decoration: defaultPinTheme.decoration!.copyWith(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(19),
+              border: Border.all(color: focusedBorderColor),
+            ),
+          ),
+          errorPinTheme: defaultPinTheme.copyBorderWith(
+            border: Border.all(color: Colors.redAccent),
+          ),
+        ),
+        if (errorText != null) // Show error text only if there's an error
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Text(
+              errorText!,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+                
