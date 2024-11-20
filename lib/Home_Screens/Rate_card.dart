@@ -251,3 +251,112 @@ class _SignInState extends State<SignIn> {
     );
   }
 }
+
+SingleChildScrollView(
+  child: Column(
+    children: [
+      // Existing widgets...
+
+      //Ticket Section
+      SizedBox(height: 10,),
+      Container(
+        height: 300, // Set a fixed height or use MediaQuery to make it responsive
+        child: SingleChildScrollView(
+          child: ListView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            itemCount: scheduledPickups.length,
+            itemBuilder: (context, index) {
+              final pickup = scheduledPickups[index];
+              return Card(
+                margin: EdgeInsets.symmetric(vertical: 5, horizontal: 15),
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      width: 0.5,
+                      color: Colors.grey,
+                    ),
+                    color: Colors.white,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text('${formatDate(pickup['date'])}'),
+                            Gap(5),
+                            Text('${pickup['slot']}'),
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Wrap(
+                            children: (pickup['items'] as List).map((item) =>
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal:4.0),
+                                  child: Chip(
+                                    label: Text(item),
+                                    backgroundColor: Color(0xffDBEAE3),
+                                  ),
+                                ),
+                            ).toList(),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10,horizontal: 16.0),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Container(
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).primaryColor,
+                                    ),
+                                    child: TextButton(
+                                      onPressed: () {
+                                        Navigator.push(context, MaterialPageRoute(builder: (context)=>HomePage()));
+                                      },
+                                      child: MySmallText(title: 'Reschedule',color:Colors.white,),
+                                    ),
+                                  ),
+                                  Gap(15),
+                                  Container(
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                    ),
+                                    child: TextButton(
+                                      onPressed: () {
+                                        Navigator.push(context, MaterialPageRoute(builder: (context)=>HomePage()));
+                                      },
+                                      child: Text('Cancel',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+
+      // Other widgets...
+    ],
+  ),
+),
