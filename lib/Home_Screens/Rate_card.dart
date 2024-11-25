@@ -379,3 +379,41 @@ class ScheduleSummary extends StatelessWidget {
     );
   }
 }
+import 'package:google_sign_in/google_sign_in.dart';
+
+// Add this method to handle Google Sign-In
+Future<void> _signInWithGoogle() async {
+  final GoogleSignIn googleSignIn = GoogleSignIn();
+  final GoogleSignInAccount? googleUser  = await googleSignIn.signIn();
+  final GoogleSignInAuthentication? googleAuth = await googleUser ?.authentication;
+
+  if (googleAuth != null) {
+    final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    await FirebaseAuth.instance.signInWithCredential(credential);
+    // Navigate to the home page after successful sign-in
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomePage()));
+  }
+}
+
+@override
+void initState() {
+  super.initState();
+  Timer(Duration(seconds: 3), () async {
+    User? user = FirebaseAuth.instance.currentUser ;
+    if (user != null) {
+      // User is signed in, navigate to home page
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => HomePage()),
+      );
+    } else {
+      // User is not signed in, navigate to onboarding
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => OnboardingView()),
+      );
+    }
+  });
+}
