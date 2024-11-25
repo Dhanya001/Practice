@@ -1,251 +1,381 @@
-class InitCashFreePayment {
-  createOrder(String amount, String studentId, String studentFullName,
-      String email, String contactNumber) async {
-    String paymentApi = "https://sandbox.cashfree.com/pg/orders";
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
+import 'package:scrapapp/Utility/BottomNavigation.dart';
+import 'package:scrapapp/Utility/Widget_Helper.dart';
+import 'package:scrapapp/screens/PickUpDetails.dart';
+import 'package:scrapapp/screens/Rate_Card_PickUp.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
-    final http.Response response = await http.post(Uri.parse(paymentApi),
-        headers: <String, String>{
-          'X-Client-Secret': 'YOUR_CLIENT_SECRET',
-          'X-Client-Id': 'YOUR_CLIENT_ID',
-          'x-api-version': '2023-08-01',
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: jsonEncode(inputParams));
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
 
-    if (response.statusCode == 200) {
-      var responseData = jsonDecode(response.body);
-      // Handle success
-      if (responseData['order_id'] != null && responseData['payment_session_id'] != null) {
-        initialPay(responseData['payment_session_id'], responseData['order_id'], amount, studentId);
-      }
-    } else {
-      print("Failed to create order: ${response.statusCode}");
+class _HomePageState extends State<HomePage> {
+  int _currentIndex = 0;
+  List<Map<String, dynamic>> scheduledPickups = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _getScheduledPickups();
+  }
+
+  Future<void> _getScheduledPickups() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String>? pickups = prefs.getStringList('scheduledPickups');
+
+    if (pickups != null) {
+      setState(() {
+        scheduledPickups = pickups.map((pickup) => jsonDecode(pickup) as Map<String, dynamic>).toList();
+      });
     }
   }
 
-  void initialPay(String sessionId, String orderId, String amount, String studentId) {
-    var session = CFSessionBuilder()
-        .setEnvironment(CFEnvironment.SANDBOX)
-        .setOrderId(orderId)
-        .setPaymentSessionId(sessionId)
-        .build();
-    var cfWebCheckout = CFWebCheckoutPaymentBuilder().setSession(session).build();
-    var cfPaymentGateway = CFPaymentGatewayService();
-    cfPaymentGateway.setCallback(
-      (p0) {
-        // Handle successful payment
-        print('Payment successful');
-        savePaymentHistory(orderId, amount, studentId, true);
-      },
-      (p0, p1) {
-        // Handle failed payment
-        print('Payment failed: ${p0.getMessage()}');
-        savePaymentHistory(orderId, amount, studentId, false);
-      },
-    );
-    cfPaymentGateway.doPayment(cfWebCheckout);
+  String formatDate(String isoDate) {
+    DateTime dateTime = DateTime.parse(isoDate);
+    return DateFormat('d MMM').format(dateTime);
   }
 
-  void savePaymentHistory(String orderId, String amount, String studentId, bool isSuccess) async {
-    // Call your API to save the payment history
-    // Example:
-    await GlobalHelper().savePaymentHistory({
-      "order_id": orderId,
-      "amount": amount,
-      "student_id": studentId,
-      "status": isSuccess ? "Success" : "Failed",
-      "created_at": DateTime.now().toIso8601String()
+  void _onTap(int index) {
+    setState(() {
+      _currentIndex = index;
     });
+    // Navigate based on index
+  }
+
+  void _reschedulePickup(Map<String, dynamic> pickup) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => PickUpDetails(
+        Day: formatDate(pickup['date']),
+        TimeSlot: pickup['slot'],
+        Weight: pickup['weight'],
+        Notes: pickup['notes'],
+        items: List<String>.from(pickup['items']),
+      )),
+    );
+  }
+
+  void _cancelPickup(Map<String, dynamic> pickup) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String>? existingPickups = prefs.getStringList('scheduledPickups');
+
+    if (existingPickups != null) {
+      existingPickups.removeWhere((item) {
+        Map<String, dynamic> pickupData = jsonDecode(item);
+        return pickupData['date'] == pickup['date'] &&
+               pickupData['slot'] == pickup['slot'] &&
+               pickupData['weight'] == pickup['weight'] &&
+               pickupData['notes'] == pickup['notes'];
+      });
+      await prefs.setStringList('scheduledPickups', existingPickups);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Pickup canceled successfully')));
+      _getScheduledPickups(); // Refresh the list
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Home")),
+      body: ListView.builder(
+        itemCount: scheduledPickups.length,
+        itemBuilder: (context, index) {
+          final pickup = scheduledPickups[index];
+          return ListTile(
+            title: Text(formatDate(pickup['date'])),
+            subtitle: Text(pickup['slot']),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.edit),
+                  onPressed: () => _reschedulePickup(pickup),
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete),
+                  onPressed: () => _cancelPickup(pickup),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      bottomNavigationBar: BottomNavigation(currentIndex: _currentIndex, onTap: _onTap),
+    );
   }
 }
 
+class PickUpDetails extends StatefulWidget {
+  final String Day;
+  final String TimeSlot;
+  final String Weight;
+  final String Notes;
+  List<String> items;
 
-@override
-void initState() {
-  super.initState();
-  checkInternet();
-  fetchPaymentHistory();
+  PickUpDetails({
+    super.key,
+    required this.Day,
+    required this.TimeSlot,
+    required this.Weight,
+    required this.Notes,
+    required this.items,
+ });
+
+  @override
+  State<PickUpDetails> createState() => _PickUpDetailsState();
 }
 
-void fetchPaymentHistory() async {
-paymentHistoryModel = await GlobalHelper().feePaid(widget.studentId, widget.currentYear);
-  setState(() {});
-}
+class _PickUpDetailsState extends State<PickUpDetails> {
+  int _currentIndex = 0;
 
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: const Color.fromRGBO(240, 240, 240, 1),
-    appBar: appbar(context, 'Payment History', 'Academic Year ${widget.currentYear.substring(0, 4)}-${widget.currentYear.substring(4, 6)}'),
-    body: isNetConnected == false
-        ? Container()
-        : FutureBuilder(
-            future: GlobalHelper().feePaid(widget.studentId, widget.currentYear),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.done) {
-                if (snapshot.hasData) {
-                  paymentHistoryModel = snapshot.data as List<PaymentHistoryModel>;
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: paymentHistoryModel.length,
-                    itemBuilder: (context, index) {
-                      var payHistory = paymentHistoryModel[index];
-                      return SizedBox(
-                        height: 180,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: SizedBox(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(left: 27),
-                                  child: Column(
-                                    children: [
-                                      const Gap(34),
-                                      Expanded(
-                                        child: MyTextMedium(
-                                          maxLines: 2,
-                                          title: constant.dateToDate2(payHistory.createDate.toString()),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 8,
-                              child: Row(
-                                children: [
-                                  const Gap(25),
-                                  SizedBox(
-                                    width: 32,
-                                    child: Stack(
-                                      children: [
-                                        Center(
-                                          child: VerticalDivider(color: HexColor('#ABADAE'), thickness: 3),
-                                        ),
-                                        const Positioned(
-                                          top: 36,
-                                          child: Icon(Icons.brightness_1, color: Colors.green, size: 35),
-                                        )
-                                      ],
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 15),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        MyTextSmall(color: HexColor('#7B7B7B'), title: "Receipt No: ${payHistory.receiptNo}"),
-                                        const Gap(7),
-                                        MyTextBig(title: "${payHistory.totalFeesPaid.toString()}/-"),
-                                        const Gap(10),
-                                        MyTextButton(
-                                          callback: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => PaymentReceipt(
-                                                  paymentHistoryModel: payHistory,
-                                                  studentModel: widget.studentModel,
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                          bgColor: Colors.blue,
-                                          myWidget: const MyTextSmall(
-                                            title: "View Receipt",
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                } else {
-                  return Center(child: Text('No Data'));
-                }
-              } else {
-                return Center(child: CircularProgressIndicator());
-              }
-            },
+  void _onTap(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+    // Navigate based on index
+  }
+
+  void _reschedule() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String>? existingPickups = prefs.getStringList('scheduledPickups');
+
+    if (existingPickups != null) {
+      existingPickups.removeWhere((pickup) {
+        Map<String, dynamic> pickupData = jsonDecode(pickup);
+        return pickupData['date'] == widget.Day &&
+               pickupData['slot'] == widget.TimeSlot &&
+               pickupData['weight'] == widget.Weight &&
+               pickupData['notes'] == widget.Notes;
+      });
+
+      // Update the pickup details
+      Map<String, dynamic> updatedPickup = {
+        'date': widget.Day,
+        'slot': widget.TimeSlot,
+        'weight': widget.Weight,
+        'notes': widget.Notes,
+        'items': widget.items,
+      };
+      existingPickups.add(jsonEncode(updatedPickup));
+      await prefs.setStringList('scheduledPickups', existingPickups);
+      Navigator.pop(context); // Go back to the previous screen
+    }
+  }
+
+  void _cancel() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String>? existingPickups = prefs.getStringList('scheduledPickups');
+
+    if (existingPickups != null) {
+      existingPickups.removeWhere((pickup) {
+        Map<String, dynamic> pickupData = jsonDecode(pickup);
+        return pickupData['date'] == widget.Day &&
+               pickupData['slot'] == widget.TimeSlot &&
+               pickupData['weight'] == widget.Weight &&
+               pickupData['notes'] == widget.Notes;
+      });
+
+      await prefs.setStringList('scheduledPickups', existingPickups);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Pickup canceled successfully')));
+      Navigator.pop(context); // Go back to the previous screen
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Pick Up Details")),
+      body: Column(
+        children: [
+          Text("Date: ${widget.Day}"),
+          Text("Time Slot: ${widget.TimeSlot}"),
+          Text("Weight: ${widget.Weight}"),
+          Text("Notes: ${widget.Notes}"),
+          // Display items
+          Wrap(
+            children: widget.items.map((item) => Chip(label: Text(item))).toList(),
           ),
-  );
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              ElevatedButton(onPressed: _reschedule, child: Text("Reschedule")),
+              ElevatedButton(onPressed: _cancel, child: Text("Cancel")),
+            ],
+          ),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigation(currentIndex: _currentIndex, onTap: _onTap),
+    );
+  }
 }
 
+class RateCardPickup extends StatefulWidget {
+  List<String> SelectedItems;
+  String ScheduleWeight;
+  String ScheduleDate;
+  int ScheduleTimeslot;
+  String ScheduleNotes;
 
+  RateCardPickup({
+    super.key,
+    required this.SelectedItems,
+    required this.ScheduleWeight,
+    required this.ScheduleDate,
+    required this.ScheduleTimeslot,
+    required this.ScheduleNotes,
+  });
 
-------------------------------------------------
+  @override
+  State<RateCardPickup> createState() => _RateCardPickupState();
+}
 
+class _RateCardPickupState extends State<RateCardPickup> {
+  // Existing code...
 
-----------------------
-    if (response.statusCode == 200) {
-      var responseData = jsonDecode(response.body);
-      print("Order ID: ${responseData['order_id']}");
-      print("Payment Session ID: ${responseData['payment_session_id']}");
-      initialPay(responseData['payment_session_id'], responseData['order_id']);
-      return responseData;
+  void _schedulePickup() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String>? existingPickups = prefs.getStringList('scheduledPickups');
+
+    Map<String, dynamic> newPickup = {
+      'date': widget.ScheduleDate,
+      'slot': widget.ScheduleTimeslot,
+      'weight': widget.ScheduleWeight,
+      'notes': widget.ScheduleNotes,
+      'items': widget.SelectedItems,
+    };
+
+    if (existingPickups != null) {
+      existingPickups.add(jsonEncode(newPickup));
+      await prefs.setStringList('scheduledPickups', existingPickups);
     } else {
-      print("Failed to payment: ${response.statusCode}");
+      await prefs.setStringList('scheduledPickups', [jsonEncode(newPickup)]);
     }
-	
-	
-	  void initialPay(String sessionId, String orderId) {
-    try {
-      var session = CFSessionBuilder()
-          .setEnvironment(CFEnvironment.SANDBOX)
-          .setOrderId(orderId)
-          .setPaymentSessionId(sessionId)
-          .build();
-      var cfWebCheckout =
-          CFWebCheckoutPaymentBuilder().setSession(session).build();
-      var cfPaymentGateway = CFPaymentGatewayService();
-      cfPaymentGateway.setCallback(
-        (p0) {
-          print('Payment Successful');
-          print('Order ID: $orderId');
-          print('Payment Session ID: $sessionId');
-          print('Payment Response: $p0');
-        },
-        (p0, p1) {
-          print('Payment Failed');
-          print('Error Message: ${p0.getMessage()}');
-          print('Error Code: $p1');
-        },
-      );
-      cfPaymentGateway.doPayment(cfWebCheckout);
-    } catch (e) {
-      print('Error during payment: $e');
-    }
+
+    Navigator.push(context, MaterialPageRoute(builder: (context) => CapturePickup(
+      onWeightChanged: (String weight) {},
+      SelectedItems: widget.SelectedItems,
+      ScheduleWeight: widget.ScheduleWeight,
+      ScheduleNotes: widget.ScheduleNotes,
+      ScheduleDate: widget.ScheduleDate,
+      ScheduleTimeslot: widget.ScheduleTimeslot,
+    )));
   }
-  
-  
-  feescreen
-  InstallmentsWidget(
-  callback: () {
-    if (mapData['allow_to_pay'][index] != 0) {
-      InitCashFreePayment().createOrder(
-        feesDetails[index]['total_fees'].toString(),
-        widget.studentId,
-        "${widget.studentModel.name} ${widget.studentModel.fatherName} ${widget.studentModel.surname}",
-        '', // email can be passed if available
-        widget.studentModel.fatherNumber.toString(),
-      );
-    }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Rate Card Pickup")),
+      body: Column(
+        children: [
+          // Existing UI components...
+          ElevatedButton(
+            onPressed: _schedulePickup,
+            child: Text("Schedule Pickup"),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Navigator.push(
+  context,
+  MaterialPageRoute(builder: (context) => CapturePickup(
+    onWeightChanged: (String weight) {},
+    SelectedItems: widget.SelectedItems,
+    ScheduleWeight: widget.ScheduleWeight,
+    ScheduleNotes: widget.ScheduleNotes,
+    ScheduleDate: widget.ScheduleDate,
+    ScheduleTimeslot: widget.ScheduleTimeslot,
+  )),
+);
+
+MyBottomButton(
+  title: "Next",
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => CalendarPickup(
+        TotWeight: _weightcontroller.text,
+        selectedItems: widget.SelectedItems,
+        ScheduleNotes: widget.ScheduleNotes,
+        ScheduleDate: widget.ScheduleDate,
+        ScheduleTimeslot: widget.ScheduleTimeslot,
+      )),
+    );
   },
-  title: "Installment ${feesDetails[index]['installment']}",
-  paid: feesDetails[index]['total_fees'].toString(),
-  due: mapData['balance_fees'].toString(),
-  btn: mapData['allow_to_pay'][index] == 0 ? 'Paid' : "Pay Now",
-  color: mapData['allow_to_pay'][index] == 0 ? HexColor('#ABADAE') : HexColor('#135E9E'),
-)
+);
+
+
+MyBottomButton(
+  title: "Next",
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ScheduleSummary(
+        selectedDate: _focusedDay,
+        TotWeight: widget.TotWeight,
+        selectedSlot: _timeslot[_selectedslot!],
+        selectedItems: widget.selectedItems,
+        ScheduleNotes: widget.ScheduleNotes,
+      )),
+    );
+  },
+);
+
+
+class ScheduleSummary extends StatelessWidget {
+  final DateTime selectedDate;
+  final String selectedSlot;
+  final String TotWeight;
+  final String ScheduleNotes;
+  final List<Map<String, dynamic>> selectedItems;
+
+  ScheduleSummary({
+    super.key,
+    required this.selectedDate,
+    required this.TotWeight,
+    required this.selectedSlot,
+    required this.selectedItems,
+    required this.ScheduleNotes,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Schedule Summary")),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Scheduled Date: ${selectedDate.toLocal()}"),
+                Text("Time Slot: $selectedSlot"),
+                Text("Estimated Weight: $TotWeight"),
+                Text("Notes: $ScheduleNotes"),
+                Wrap(
+                  children: selectedItems.map((item) => Chip(label: Text(item['title']))).toList(),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // Logic to confirm the schedule
+              // This is where you could save to SharedPreferences if needed
+            },
+            child: Text("Confirm Schedule"),
+          ),
+        ],
+      ),
+    );
+  }
+}
