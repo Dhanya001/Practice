@@ -70,3 +70,133 @@ void authenticateUser (String phoneNumber, String email) {
   sendSmsOtp(phoneNumber, otp);
   sendEmailOtp(email, otp);
 }
+
+
+
+Future<void> login(String phone, String email) async {
+    var response = await http.post(
+      Uri.parse('http://192.168.0.190/scrap_app/api/login'),
+      body: {
+        'phone': phone,
+        'email': email,
+      },
+    );
+    print('status: ${response.statusCode}');
+    print('body: ${response.body}');
+    if (response.statusCode == 200) {
+      var responseData = jsonDecode(response.body);
+      print('Login : $responseData');
+    } else {
+      //print('Error: ${response.reasonPhrase}');
+      throw Exception('Failed to login: ${response.statusCode}');
+    }
+}
+
+
+Future<void> login(String phone, String email) async {
+  try {
+    print('Sending data to API: phone=$phone, email=$email');
+
+    var response = await http.post(
+      Uri.parse('http://192.168.0.190/scrap_app/api/login'),
+      body: {
+        'phone': phone,
+        'email': email,
+      },
+    );
+
+    print('status: ${response.statusCode}');
+    print('body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      var responseData = jsonDecode(response.body);
+      print('data: $responseData');
+    } else {
+      print('error: ${response.reasonPhrase}');
+      throw Exception('Failed to login: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error during login: $e');
+    rethrow;
+  }
+}
+
+class Item {
+  final String title;
+  final double price;
+
+  Item({required this.title, required this.price});
+
+  factory Item.fromJson(Map<String, dynamic> json) {
+    return Item(
+      title: json['title'] as String,
+      price: double.parse(json['price'].toString()),
+    );
+  }
+}
+
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+Future<List<Item>> fetchItems() async {
+  final response = await http.get(Uri.parse('http://192.168.0.190/scrap_app/api/items'));
+
+  if (response.statusCode == 200) {
+    List<dynamic> data = jsonDecode(response.body);
+    return data.map((item) => Item.fromJson(item)).toList();
+  } else {
+    throw Exception('Failed to load items: ${response.statusCode}');
+  }
+}
+
+
+import 'package:flutter/material.dart';
+
+class ItemDetailsPage extends StatelessWidget {
+  const ItemDetailsPage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Item Details'),
+      ),
+      body: FutureBuilder<List<Item>>(
+        future: fetchItems(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text('Error: ${snapshot.error}'),
+            );
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No items available.'));
+          }
+
+          final items = snapshot.data!;
+          return ListView.builder(
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return ListTile(
+                title: Text(item.title),
+                subtitle: Text('Price: \$${item.price.toStringAsFixed(2)}'),
+                onTap: () {
+                  // Handle item tap
+                  print('Tapped on: ${item.title}');
+                },
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+
+[
+  {"title": "Item 1", "price": 100.0},
+  {"title": "Item 2", "price": 200.0}
+]
