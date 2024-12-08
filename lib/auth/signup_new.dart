@@ -1,221 +1,89 @@
 import 'package:flutter/material.dart';
 
-class SignUpPage extends StatefulWidget {
-  @override
-  _SignUpPageState createState() => _SignUpPageState();
-}
+class CartProvider with ChangeNotifier {
+  int _cartItemCount = 0;
 
-class _SignUpPageState extends State<SignUpPage> {
-  bool _isAgreed = false;
+  int get cartItemCount => _cartItemCount;
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text("Sign Up"),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: IconThemeData(color: Colors.black),
-      ),
-      body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Welcome to App Name",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text("Complete the sign up to get started"),
-            SizedBox(height: 24),
-            // Name Field
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Name',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-            SizedBox(height: 16),
-            // Email Field
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-            SizedBox(height: 16),
-            // Password Field
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                suffixIcon: Icon(Icons.visibility),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-            SizedBox(height: 16),
-            // Terms and Policy Checkbox
-            Row(
-              children: [
-                Checkbox(
-                  value: _isAgreed,
-                  onChanged: (value) {
-                    setState(() {
-                      _isAgreed = value!;
-                    });
-                  },
-                ),
-                Text("By signing up, you agree to the "),
-                GestureDetector(
-                  onTap: () {
-                    // Navigate to Terms of Service
-                  },
-                  child: Text(
-                    "Terms of Service",
-                    style: TextStyle(color: Colors.green),
-                  ),
-                ),
-                Text(" and "),
-                GestureDetector(
-                  onTap: () {
-                    // Navigate to Privacy Policy
-                  },
-                  child: Text(
-                    "Privacy Policy",
-                    style: TextStyle(color: Colors.green),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 24),
-            // Register Button
-            ElevatedButton(
-              onPressed: _isAgreed
-                  ? () {
-                // Register logic
-              }
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                minimumSize: Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: Text("Register"),
-            ),
-            SizedBox(height: 16),
-            // Login Button
-            OutlinedButton(
-              onPressed: () {
-                // Navigate to login page
-              },
-              style: OutlinedButton.styleFrom(
-                minimumSize: Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                side: BorderSide(color: Colors.green),
-              ),
-              child: Text(
-                "Login",
-                style: TextStyle(color: Colors.green),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  void addItem() {
+    _cartItemCount++;
+    notifyListeners();
+  }
+
+  void removeItem() {
+    if (_cartItemCount > 0) {
+      _cartItemCount--;
+      notifyListeners();
+    }
+  }
+
+  void setItemCount(int count) {
+    _cartItemCount = count;
+    notifyListeners();
   }
 }
 
-import 'package:firebase_auth/firebase_auth.dart';
+
+
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class OTPAuthentication extends StatefulWidget {
-  @override
-  _OTPAuthenticationState createState() => _OTPAuthenticationState();
+void main() {
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => CartProvider(),
+      child: MyApp(),
+    ),
+  );
 }
 
-class _OTPAuthenticationState extends State<OTPAuthentication> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _otpController = TextEditingController();
+import 'package:provider/provider.dart';
 
-  String? _verificationId;
+// Inside your AddItemList class
+void _handleSaveAction(int index) async {
+  // ... existing code ...
 
-  void _verifyPhoneNumber() async {
-    await _auth.verifyPhoneNumber(
-      phoneNumber: _phoneController.text,
-      verificationCompleted: (PhoneAuthCredential credential) async {
-        await _auth.signInWithCredential(credential);
-        print("Phone number verified automatically.");
-      },
-      verificationFailed: (FirebaseAuthException e) {
-        print("Verification failed: ${e.message}");
-      },
-      codeSent: (String verificationId, int? resendToken) {
-        _verificationId = verificationId;
-        print("OTP sent to phone.");
-      },
-      codeAutoRetrievalTimeout: (String verificationId) {
-        _verificationId = verificationId;
-      },
-    );
+  if (response['success'] != null) {
+    print(response['success']);
+    // Update the cart item count
+    Provider.of<CartProvider>(context, listen: false).addItem();
+    setState(() {
+      widget.cartItemCount++;
+    });
+    Navigator.pop(context);
   }
+}
 
-  void _signInWithOTP() async {
-    PhoneAuthCredential credential = PhoneAuthProvider.credential(
-      verificationId: _verificationId!,
-      smsCode: _otpController.text,
-    );
-    await _auth.signInWithCredential(credential);
-    print("User signed in successfully.");
+import 'package:provider/provider.dart';
+
+// Inside your OrderBookingEditPage class
+void _deleteOrderItem(int itemId) async {
+  // ... existing code ...
+
+  if (confirmDelete == true) {
+    var res = await globalHelper.delete_order_item(itemId);
+    if (res['success'] != null) {
+      constants.Notification(res['success']);
+      // Update the cart item count
+      Provider.of<CartProvider>(context, listen: false).removeItem();
+    }
   }
+}
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Firebase OTP Authentication")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _phoneController,
-              decoration: InputDecoration(labelText: "Phone Number"),
-              keyboardType: TextInputType.phone,
-            ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _verifyPhoneNumber,
-              child: Text("Verify Phone Number"),
-            ),
-            TextField(
-              controller: _otpController,
-              decoration: InputDecoration(labelText: "Enter OTP"),
-              keyboardType: TextInputType.number,
-            ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _signInWithOTP,
-              child: Text("Sign In"),
-            ),
-          ],
+@override
+Widget build(BuildContext context) {
+  final cartCount = Provider.of<CartProvider>(context).cartItemCount;
+
+  return Scaffold(
+    appBar: AppBar(
+      title: Text('Add Item'),
+      actions: [
+        Badge(
+          badgeContent: Text(cartCount.toString()),
+          child: Icon(Icons.shopping_cart),
         ),
-      ),
-    );
-  }
+      ],
+    ),
+    // ... rest of your widget tree ...
+  );
 }
-
