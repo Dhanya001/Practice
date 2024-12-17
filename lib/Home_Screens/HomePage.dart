@@ -1,473 +1,277 @@
 import 'dart:convert';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:accordion/accordion.dart';
-import 'package:scrapapp/Utility/BottomNavigation.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:scrapapp/Utility/Widget_Helper.dart';
-import 'package:gap/gap.dart';
-import 'package:scrapapp/screens/Profie_Screens/MyAccount.dart';
-import 'package:scrapapp/screens/Profie_Screens/PickUpDetails.dart';
-import 'package:scrapapp/screens/Rate_Card.dart';
-import 'package:scrapapp/screens/Rate_Card_PickUp.dart';
-import 'package:scrapapp/screens/Recycle_Product.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/intl.dart';
+import 'package:scrapapp/screens/HomePage.dart';
+import 'package:uuid/uuid.dart';
+import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:scrapapp/Utility/constants.dart' as constants;
 
-class HomePage extends StatefulWidget {
-  // final List<Map<String, String>> selecteditems;
-  const HomePage({super.key});
+
+
+class LocationPage extends StatefulWidget {
+  const LocationPage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<LocationPage> createState() => _LocationPageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _LocationPageState extends State<LocationPage> {
+  final TextEditingController _searchcontroller=TextEditingController();
+  // final String token='1234567890';
+  var uuid = Uuid();
+  // List<dynamic>ListOfLocation=[];
 
-  int _currentIndex=0;
-  String item1='First';
-  String item2='Second';
-  List<String>? RateItemsTitles;
-  String? Daytimeslot;
-  String? Daytimeslot1;
-  final DateTime _now = DateTime.now();
-  List<Map<String, dynamic>> scheduledPickups = [];
-
+  String? _currentAddress;
+  Position? _currentPosition;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    _getRateItems();
-    _saveRateItems();
-    _getScheduledPickups().then((pickups){
+    _getCurrentPosition();
+    _handleLocationPermission();
+    _searchcontroller.addListener((){});
+    // _onchange();
+  }
+
+
+
+  Future<bool> _handleLocationPermission() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      constants.showCustomSnackBar1(context, "Location services are disabled. Please enable the services");
+      return false;
+    }
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        constants.showCustomSnackBar1(context, "Location permissions are denied");
+        return false;
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      constants.showCustomSnackBar1(context, "Location permissions are permanently denied, we cannot request permissions.");
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _getCurrentPosition() async {
+    final hasPermission = await _handleLocationPermission();
+    if (!hasPermission) return;
+    await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high)
+        .then((Position position) {
+      setState(() => _currentPosition = position);
+    }).catchError((e) {
+      debugPrint(e);
+    });
+
+    await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high)
+        .then((Position position) {
+      setState(() => _currentPosition = position);
+      _getAddressFromLatLng(_currentPosition!);
+    }).catchError((e) {
+      debugPrint(e);
+    });
+  }
+
+  Future<void> _getAddressFromLatLng(Position position) async {
+    await placemarkFromCoordinates(
+        _currentPosition!.latitude, _currentPosition!.longitude)
+        .then((List<Placemark> placemarks) {
+      Placemark place = placemarks[0];
       setState(() {
-        scheduledPickups = pickups;
+        _currentAddress =
+        '${place.street}, ${place.subLocality},${place.subAdministrativeArea}, ${place.postalCode}';
       });
+    }).catchError((e) {
+      debugPrint(e);
     });
   }
 
-  Future<List<String>?> _getRateItems() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? Items=prefs.getString('RateItemsTitles');
-    final String? Dayslot=prefs.getString('Day');
-    setState(() {
-      DateTime? parsedDate;
-      if (Dayslot != null) {
-              parsedDate = DateFormat("MMM d,yy").parse(Dayslot); // Adjust the format as needed
-            }
-      Daytimeslot = parsedDate != null ? DateFormat('MMM d,yy').format(parsedDate) : 'No date';
-      RateItemsTitles = Items?.split(',');
-    });
 
-    print(RateItemsTitles);
-    print('hey your day ${Daytimeslot}');
-  }
+  List<dynamic> ListOfLocation = [
+    "Mumbai",
+    "Delhi",
+    "Bangalore",
+    "Chennai",
+    "Kolkata",
+    "Pune",
+    "Hyderabad",
+    "Ahmedabad",
+    "Jaipur",
+    "Lucknow",
+  ];
 
-  Future<List<Map<String, dynamic>>> _getScheduledPickups() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String>? pickups = prefs.getStringList('scheduledPickups');
-
-    if (pickups != null) {
-      return pickups.map((pickup) => jsonDecode(pickup) as Map<String, dynamic>).toList();
-    }
-    return [];
-  }
-
-  Future<void> _saveRateItems() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-  }
-
-  String formatDate(String isoDate) {
-  DateTime dateTime = DateTime.parse(isoDate);
-  return DateFormat('d MMM').format(dateTime);
-}
-
-  void _onTap(int index){
-    setState(() {
-      _currentIndex=index;
-    });
-    switch(index){
-      case 0:
-        Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context)=>HomePage()));
-        break;
-      case 1:
-        Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context)=>RateCard()));
-        break;
-      case 2:
-        Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context)=>RecycleProduct()));
-        break;
-      case 3:
-        Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context)=>MyAccount()));
-        break;
-    }
-}
 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        title: Row(
-          children: [
-            Image.asset("assets/icons/Munich_center.png"),
-            Gap(10),
-            MySmallText(title: "Munich Center",isBold: false,color: Colors.black,),
-            Gap(4),
-            PopupMenuButton(
-              child: Container(
-                child: Icon(Icons.keyboard_arrow_down_sharp),
-              ),
-                itemBuilder: (context)=>[
-              PopupMenuItem(child: Text("First data")),
-              PopupMenuItem(child: Text("second data")),
-            ],onSelected: (value){
-                ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("$value item Clicked")));
-            },),
-          ],
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+            ),
+            child: IconButton(
+              icon: Icon(Icons.chevron_left, color: Colors.black),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
         ),
-        actions: [
-          IconButton(onPressed: () {}
-              , icon: Icon(Icons.notifications_none_sharp))
-        ],
-        automaticallyImplyLeading: false,
+        title: Text("Enter your location",style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold),),centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Stack(
-              children: [
-               Container(
-                 margin: EdgeInsets.symmetric(vertical: 10,horizontal: 15),
-                 height: 180,
-                 width: double.infinity,
-                 decoration: BoxDecoration(
-                   color: Color(0xffF4A261),
-                 ),
-                 child: Padding(
-                   padding: const EdgeInsets.symmetric(vertical: 10.0,horizontal: 10),
-                   child: SingleChildScrollView(
-                     scrollDirection: Axis.horizontal,
-                     child: Row(
-                       mainAxisAlignment: MainAxisAlignment.spaceAround,
-                       children: [
-                         Padding(
-                           padding: const EdgeInsets.symmetric(vertical: 8.0),
-                           child: Column(
-                             children: [
-                               MySmallText(title: "Turn your scrap into cash!",isBold: true,color: Colors.white,),
-                               SizedBox(height: 15,),
-                               MySmallText(title: "Schedule a pickup today and\n make recycling effortless.",isBold: false,color: Colors.white,),
-                             ],
-                           ),
-                         ),
-                         Image.asset("assets/home_content.png",fit: BoxFit.cover,width: 135,)
-                       ],
-                     ),
-                   ),
-                 ),
-               ),
-                Padding(padding: EdgeInsets.only(top: 160,right: 50,left: 50,bottom: 5),
-                //Positioned(top: 140,right: 10,left: 10,bottom: 5,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                        onPressed: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => RateCardPickup()));
-                        },
-                        child: MySmallText(title: "Schedule Pickup Now",color: Colors.grey, isBold: true),
-                                  ),
-                        IconButton(onPressed: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (context)=>RateCardPickup()));
-                        }, icon: Icon(Icons.arrow_forward_ios_sharp,color: Colors.grey,size: 15,))
-                      ],
-                    ),
-                  ),
-                ),
-            
-            
-              ],
+      body: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 5,horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 10,vertical: 6),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(60),
+              border: Border.all(width: 2,color: Color(0xff2D6A4F)),
             ),
-
-            //Statistics Section
-            SizedBox(height: 10,),
-            Container(
-              margin: EdgeInsets.symmetric(vertical: 10,horizontal: 15),
-              child: Align(alignment: AlignmentDirectional.centerStart,
-                  child: MyBigText(title: "Statistics",isBold: true,color: Colors.black,)),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10,horizontal: 15),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildStatisticsCard("Scrap Collectedfjgbjfbgfgnfgnfnddfjkgbjkvgbfkbgbfk", "145 KG", Icons.recycling_sharp, HomePage()),
-                    _buildStatisticsCard("Wallet Balance", "1200 Coins", Icons.monetization_on_sharp, HomePage()),
-                    _buildStatisticsCard("Completed Changes", "10", Icons.fire_truck_sharp, HomePage())
-                  ],
-                ),
+            child: TextFormField(
+              controller: _searchcontroller,
+              decoration: const InputDecoration(
+                icon: Icon(Icons.search),
+                //border: OutlineInputBorder(),
+                border: InputBorder.none,
+                hintText: "Enter Location",
+                //labelText: "Location",
               ),
-            ),
+              onChanged: (value){
+                setState(() {
 
-            //Category Section
-            SizedBox(height: 10,),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  margin: EdgeInsets.symmetric(vertical: 10,horizontal: 15),
-                  child: Align(alignment: AlignmentDirectional.centerStart,
-                      child: MyBigText(title: "Products By Category",isBold: true,color: Colors.black,)),
-                ),
-                TextButton(onPressed: () {}, child: MySmallText(title: "See All",isBold: true,))
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10,horizontal: 15),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildCategoryCard("Category", HomePage()),
-                    _buildCategoryCard("Category", HomePage()),
-                    _buildCategoryCard("Category", HomePage()),
-                    _buildCategoryCard("Category", HomePage()),
-                    _buildCategoryCard("Category", HomePage()),
-                    _buildCategoryCard("Category", HomePage()),
-                    _buildCategoryCard("Category", HomePage()),
-                    _buildCategoryCard("Category", HomePage()),
-                  ],
-                ),
-              ),
-            ),
-
-            //Ticket Section
-            SizedBox(height: 10,),
-
-            ListView.builder(
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              itemCount: scheduledPickups.length,
-              itemBuilder: (context, index) {
-                final pickup = scheduledPickups[index];
-                return Card(
-                  margin: EdgeInsets.symmetric(vertical: 5, horizontal: 15),
-                  child: Card(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          width: 0.5,
-                          color: Colors.grey,
-                        ),
-                        color: Colors.white,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    color: Colors.greenAccent[100],
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 4,horizontal: 8),
-                                    child: Text(
-                                      'In Progress',
-                                      style: TextStyle(color: Theme.of(context).primaryColor),
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    color: Colors.orange[50],
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical:4,horizontal: 8.0),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.watch_later_outlined,color: Color(0xffF4A261),size: 20,),
-                                        MyExtraSmallText(title:'${formatDate(pickup['date'])}',color: Color(0xffF4A261),),
-                                        Gap(5),
-                                        MyExtraSmallText(title: '${pickup['slot']}',color: Color(0xffF4A261)),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                            child: Wrap(
-                              children: (pickup['items'] as List).map((item) =>
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal:4.0),
-                                    child: Chip(
-                                      label: Text(item),
-                                      backgroundColor: Color(0xffDBEAE3),
-                                    ),
-                                  ),
-                              ).toList(),
-                            ),
-                          ),
-
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10,horizontal: 16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Container(
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).primaryColor,
-                                  ),
-                                  child: TextButton(
-                                    onPressed: () async {
-                                      Navigator.push(context, MaterialPageRoute(builder: (context)=>PickUpDetails()));
-                                    },
-                                    child: MyExtraSmallText(title: 'Reschedule',color:Colors.white,),
-                                  ),
-                                ),
-                                Gap(15),
-                                Container(
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Colors.red,
-                                  ),
-                                  child: TextButton(
-                                    onPressed: () {
-                                      Navigator.push(context, MaterialPageRoute(builder: (context)=>HomePage()));
-                                    },
-                                    child: Text('Cancel',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
+                });
               },
             ),
-
-          ],
-        ),
-      ),
-       bottomNavigationBar: BottomNavigation(currentIndex: _currentIndex, onTap: _onTap),
-    );
-  }
-
-  Widget _buildStatisticsCard(String title,String value,IconData icon,Widget destination){
-    return GestureDetector(
-      onTap: (){
-        Navigator.push(context, MaterialPageRoute(builder: (context) => destination));
-      },
-      child: Container(
-        height: 200,
-        width: 150,
-        margin: EdgeInsets.only(right: 16.0),
-        padding: EdgeInsets.all(10),
-    decoration: BoxDecoration(
-          color: Colors.green[400],
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 8,),
-            Container(
-              child: Text(title,
-                style: TextStyle(
-                fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  fontSize: 17
-              ),maxLines: 2,overflow: TextOverflow.ellipsis),
-            ),
-            SizedBox(height: 8,),
-            MyBigText(title: value,isBold: true,color: Colors.white,),
-            SizedBox(height: 8,),
-            Align(alignment: Alignment.bottomRight,
-                child: Icon(icon,size: 60,)),
-
-          ],
-        ),
-      ),
-    );
-
-
-  }
-
-  Widget _buildCategoryCard(String category,Widget destination){
-    return GestureDetector(
-      onTap: (){
-        Navigator.push(context, MaterialPageRoute(builder: (context) => destination));
-      },child: Container(
-      height: 100,
-      margin: EdgeInsets.all(16),
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: Colors.grey[300],
           ),
-          SizedBox(height: 8.0),
-          MyExtraSmallText(title: category),
-        ],
-      ),
-    ),
-    );
-  }
-
-  Widget _buildStatusCard(String title,IconData icon){
-    return GestureDetector(
-          child: Container(
-            height: 300,
-            width: double.infinity,
-            margin: EdgeInsets.only(right: 16.0),
-            padding: EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Align(alignment: Alignment.topLeft,
-                    child: Icon(icon)),
-                MyBigText(title: title,isBold: true,color: Colors.blueAccent,),
-              ],
+          Visibility(
+            // visible: _searchcontroller.text.isEmpty?true:false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: TextButton(onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context)=>CurrentUserLocation()));
+                }, child: Text("Use my current location",
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                      fontSize: 18
+                  ),)),
+              ),
             ),
           ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('LAT: ${_currentPosition?.latitude ?? ""}'),
+              Text('LNG: ${_currentPosition?.longitude ?? ""}'),
+              Text('ADDRESS: ${_currentAddress ?? ""}'),
+            ],
+          ),
+          SizedBox(height: 10,),
+          Visibility(
+            // visible: _searchcontroller.text.isEmpty?false:true,
+            child: Expanded(
+                child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: ListOfLocation.length,
+                itemBuilder: ( context,index){
+                  return GestureDetector(
+                    onTap: (){},
+                    child: Center(child: MySmallText(title:ListOfLocation[index],color: Colors.black,isBold: true,)),
+                  );
+                }
+            )),
+          ),
+        ],),
     );
   }
 }
 
 
 
+class CurrentUserLocation extends StatefulWidget {
+  const CurrentUserLocation({super.key});
 
+  @override
+  State<CurrentUserLocation> createState() => _CurrentUserLocationState();
+}
+
+class _CurrentUserLocationState extends State<CurrentUserLocation> {
+  late GoogleMapController googleMapController;
+  static const CameraPosition initialCameraPosition=CameraPosition(target: LatLng(19.2530317,73.1366),zoom: 14);
+
+  Set<Marker>markers={};
+
+  Future<Position> _handleLocationPermission() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      constants.showCustomSnackBar1(context, "Location services are disabled. Please enable the services");
+      // return false;
+    }
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        constants.showCustomSnackBar1(context, "Location permissions are denied");
+        // return false;
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      constants.showCustomSnackBar1(context, "Location permissions are permanently denied, we cannot request permissions.");
+      // return false;
+    }
+    Position position=await Geolocator.getCurrentPosition();
+    return position;
+  }
+
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: GoogleMap(
+        initialCameraPosition: initialCameraPosition,
+        markers: markers,
+        zoomControlsEnabled: false,
+      mapType: MapType.normal,
+      onMapCreated: (GoogleMapController controller){
+          googleMapController=controller;
+      },),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async{
+          Position position=await _handleLocationPermission();
+        googleMapController.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: LatLng(position.latitude, position.longitude),zoom: 14)));
+
+        markers.clear();
+        markers.add( Marker(markerId: MarkerId('currentlocation'),position: LatLng(position.latitude, position.longitude)));
+
+        setState(() {});
+
+      },label: Text("current Location"),),
+    );
+  }
+}
+//I want show list with onclick for particular city with some vertical spacing in list and search bar functionality then particular location came and currentLocation class getting error
