@@ -1,277 +1,288 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:gap/gap.dart';
 import 'package:scrapapp/Utility/Widget_Helper.dart';
-import 'package:scrapapp/screens/HomePage.dart';
-import 'package:uuid/uuid.dart';
-import 'package:http/http.dart' as http;
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:scrapapp/Utility/constants.dart' as constants;
+import 'package:scrapapp/Utility/global_helper.dart';
+class Address {
+  String title;
+  String addressLine1;
+  String addressLine2;
+  String city;
+  String pinCode;
 
-
-
-class LocationPage extends StatefulWidget {
-  const LocationPage({super.key});
-
-  @override
-  State<LocationPage> createState() => _LocationPageState();
+  Address({
+    required this.title,
+    required this.addressLine1,
+    required this.addressLine2,
+    required this.city,
+    required this.pinCode,
+  });
 }
 
-class _LocationPageState extends State<LocationPage> {
-  final TextEditingController _searchcontroller=TextEditingController();
-  // final String token='1234567890';
-  var uuid = Uuid();
-  // List<dynamic>ListOfLocation=[];
+class AddressBookPage extends StatefulWidget {
+  @override
+  _AddressBookPageState createState() => _AddressBookPageState();
+}
 
-  String? _currentAddress;
-  Position? _currentPosition;
+class _AddressBookPageState extends State<AddressBookPage> {
+  final List<Address> addresses = [];
+  final TextEditingController searchController = TextEditingController();
+  List<Address> searchResults = [];
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    _getCurrentPosition();
-    _handleLocationPermission();
-    _searchcontroller.addListener((){});
-    // _onchange();
+    searchResults = addresses;
   }
 
-
-
-  Future<bool> _handleLocationPermission() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      constants.showCustomSnackBar1(context, "Location services are disabled. Please enable the services");
-      return false;
-    }
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        constants.showCustomSnackBar1(context, "Location permissions are denied");
-        return false;
-      }
-    }
-    if (permission == LocationPermission.deniedForever) {
-      constants.showCustomSnackBar1(context, "Location permissions are permanently denied, we cannot request permissions.");
-      return false;
-    }
-    return true;
-  }
-
-  Future<void> _getCurrentPosition() async {
-    final hasPermission = await _handleLocationPermission();
-    if (!hasPermission) return;
-    await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high)
-        .then((Position position) {
-      setState(() => _currentPosition = position);
-    }).catchError((e) {
-      debugPrint(e);
-    });
-
-    await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high)
-        .then((Position position) {
-      setState(() => _currentPosition = position);
-      _getAddressFromLatLng(_currentPosition!);
-    }).catchError((e) {
-      debugPrint(e);
-    });
-  }
-
-  Future<void> _getAddressFromLatLng(Position position) async {
-    await placemarkFromCoordinates(
-        _currentPosition!.latitude, _currentPosition!.longitude)
-        .then((List<Placemark> placemarks) {
-      Placemark place = placemarks[0];
+  void runFilter(String keyword) {
+    if (keyword.isEmpty) {
       setState(() {
-        _currentAddress =
-        '${place.street}, ${place.subLocality},${place.subAdministrativeArea}, ${place.postalCode}';
+        searchResults = addresses;
       });
-    }).catchError((e) {
-      debugPrint(e);
-    });
+    } else {
+      setState(() {
+        searchResults = addresses
+            .where((address) =>
+            address.title.toLowerCase().contains(keyword.toLowerCase()))
+            .toList();
+      });
+    }
   }
 
+  void _navigateToEditAddressPage({Address? address}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditAddressPage(
+          address: address,
+          onSave: (newAddress) {
+            setState(() {
+              if (address != null) {
+                int index = addresses.indexOf(address);
+                addresses[index] = newAddress;
+              } else {
+                addresses.add(newAddress);
+              }
+              searchResults = addresses;
+            });
+          },
+        ),
+      ),
+    );
+  }
 
-  List<dynamic> ListOfLocation = [
-    "Mumbai",
-    "Delhi",
-    "Bangalore",
-    "Chennai",
-    "Kolkata",
-    "Pune",
-    "Hyderabad",
-    "Ahmedabad",
-    "Jaipur",
-    "Lucknow",
-  ];
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // appBar: AppBar(
+      //   title: Text('Address Book'),
+      //   actions: [
+      //     IconButton(
+      //       icon: Icon(Icons.add),
+      //       onPressed: () => _navigateToEditAddressPage(),
+      //     ),
+      //   ],
+      // ),
+      appBar: myappbar(context, 'Address Book', true),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+            decoration: BoxDecoration(
+                border: Border.all(width: 2, color: Colors.grey),
+                borderRadius: BorderRadius.circular(16)),
+              child: TextField(
+                controller: searchController,
+                decoration: InputDecoration(
+                  suffixIcon: Icon(Icons.search),
+                contentPadding:
+                    EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                border: InputBorder.none,
+                  labelText: 'Search Address',
+                ),
+                onChanged: runFilter,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: searchResults.length,
+              itemBuilder: (context, index) {
+                final address = searchResults[index];
+                return ListTile(
+                  title: Text(address.title),
+                  subtitle: Text(
+                    '${address.addressLine1}, ${address.addressLine2}, ${address.city}, ${address.pinCode}',
+                  ),
+                  trailing: IconButton(
+                    icon: Icon(Icons.edit),
+                    onPressed: () => _navigateToEditAddressPage(address: address),
+                  ),
+                );
+              },
+            ),
+          ),
+          MyBottomButton(title: 'Add address', onPressed: (){
+            _navigateToEditAddressPage();
+          })
+        ],
+      ),
+    );
+  }
+}
 
+class EditAddressPage extends StatefulWidget {
+  final Address? address;
+  final Function(Address) onSave;
 
+  EditAddressPage({this.address, required this.onSave});
+
+  @override
+  _EditAddressPageState createState() => _EditAddressPageState();
+}
+
+class _EditAddressPageState extends State<EditAddressPage> {
+  late TextEditingController titleController;
+  late TextEditingController addressLine1Controller;
+  late TextEditingController addressLine2Controller;
+  late TextEditingController pinCodeController;
+  String? selectedCity;
+  //remove cities list manual get from city through api
+  List<String> cities = ['Kalyan', 'Mumbai', 'Dombivli'];
+
+  getLocation() async {
+    try {
+      var response = await http.get(Uri.parse(
+        '${constant.apiLocalName}/getLocation',
+      ));
+      log(response.body);
+      if (response.statusCode == 200) {
+        var responseData = jsonDecode(response.body);
+        var LocationData = responseData['cities'];
+        return LocationData;
+      } else {
+        return throw Exception('Failed to Fetch Location: ${response.statusCode}');
+      }
+    } on Exception catch (e) {
+      print('Error during Location: $e');
+      rethrow;
+    }
+  }
+  
+  List? city;
+  initial() async {
+    //getlocation api there is list id,city,pincode
+    //i want cities in api city 
+    //and user selected city then pincode came from api and pincode field disable
+    city = await GlobalHelper().getLocation();
+    setState(() {});
+  }
+  @override
+  void initState() {
+    super.initState();
+    titleController = TextEditingController(text: widget.address?.title);
+    addressLine1Controller = TextEditingController(text: widget.address?.addressLine1);
+    addressLine2Controller = TextEditingController(text: widget.address?.addressLine2);
+    pinCodeController = TextEditingController(text: widget.address?.pinCode);
+    // selectedCity=widget.
+    // initial();
+  }
+
+  void saveAddress() {
+    final newAddress = Address(
+      title: titleController.text,
+      addressLine1: addressLine1Controller.text,
+      addressLine2: addressLine2Controller.text,
+      city: selectedCity ?? 'Unknown ',
+      pinCode: pinCodeController.text,
+    );
+    widget.onSave(newAddress);
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-            ),
-            child: IconButton(
-              icon: Icon(Icons.chevron_left, color: Colors.black),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-        ),
-        title: Text("Enter your location",style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold),),centerTitle: true,
+        title: Text(widget.address == null ? 'Add Address' : 'Edit Address'),
       ),
-      body: Column(
-        children: [
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 5,horizontal: 20),
-            padding: const EdgeInsets.symmetric(horizontal: 10,vertical: 6),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(60),
-              border: Border.all(width: 2,color: Color(0xff2D6A4F)),
-            ),
-            child: TextFormField(
-              controller: _searchcontroller,
-              decoration: const InputDecoration(
-                icon: Icon(Icons.search),
-                //border: OutlineInputBorder(),
-                border: InputBorder.none,
-                hintText: "Enter Location",
-                //labelText: "Location",
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            //want Radio button Home and Work instead TextField
+            TextField(
+              controller: titleController,
+              decoration: InputDecoration(
+                labelText: 'Title (Home/Work)',
+                contentPadding:
+                  EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                border: OutlineInputBorder(),
               ),
-              onChanged: (value){
+            ),
+            Gap(10),
+            TextField(
+              controller: addressLine1Controller,
+              decoration: InputDecoration(
+                  labelText: 'Address Line 1',
+                contentPadding:
+                EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            Gap(10),
+            TextField(
+              controller: addressLine2Controller,
+              decoration: InputDecoration(labelText: 'Address Line 2',
+                contentPadding:
+                EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                border: OutlineInputBorder(),),
+            ),
+            Gap(10),
+            DropdownButtonFormField<String>(
+              decoration: InputDecoration(contentPadding:
+              EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                border: OutlineInputBorder(),),
+              value: selectedCity,
+              hint: Text('Select City'),
+              items: cities.map((String city) {
+                return DropdownMenuItem<String>(
+                  value: city,
+                  child: Text(city),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
                 setState(() {
-
+                  selectedCity = newValue;
                 });
               },
             ),
-          ),
-          Visibility(
-            // visible: _searchcontroller.text.isEmpty?true:false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: TextButton(onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context)=>CurrentUserLocation()));
-                }, child: Text("Use my current location",
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                      fontSize: 18
-                  ),)),
-              ),
+            Gap(10),
+            TextField(
+              controller: pinCodeController,
+              decoration: InputDecoration(
+                  labelText: 'Pin Code',
+                contentPadding:
+                EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              border: OutlineInputBorder()),
+              keyboardType: TextInputType.number,
             ),
-          ),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('LAT: ${_currentPosition?.latitude ?? ""}'),
-              Text('LNG: ${_currentPosition?.longitude ?? ""}'),
-              Text('ADDRESS: ${_currentAddress ?? ""}'),
-            ],
-          ),
-          SizedBox(height: 10,),
-          Visibility(
-            // visible: _searchcontroller.text.isEmpty?false:true,
-            child: Expanded(
-                child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: ListOfLocation.length,
-                itemBuilder: ( context,index){
-                  return GestureDetector(
-                    onTap: (){},
-                    child: Center(child: MySmallText(title:ListOfLocation[index],color: Colors.black,isBold: true,)),
-                  );
-                }
-            )),
-          ),
-        ],),
+            SizedBox(height: 30),
+            MyTextButton(
+                title: widget.address == null ? '  Add Address  ' : '  Update Address  ',
+                onPressed: ()async{
+                  saveAddress();
+                },color: Theme.of(context).primaryColor,)
+            // ElevatedButton(
+            //   onPressed: saveAddress,
+            //   child: Text(widget.address == null ? 'Add Address' : 'Update Address'),
+            // ),
+          ],
+        ),
+      ),
     );
   }
 }
-
-
-
-class CurrentUserLocation extends StatefulWidget {
-  const CurrentUserLocation({super.key});
-
-  @override
-  State<CurrentUserLocation> createState() => _CurrentUserLocationState();
-}
-
-class _CurrentUserLocationState extends State<CurrentUserLocation> {
-  late GoogleMapController googleMapController;
-  static const CameraPosition initialCameraPosition=CameraPosition(target: LatLng(19.2530317,73.1366),zoom: 14);
-
-  Set<Marker>markers={};
-
-  Future<Position> _handleLocationPermission() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      constants.showCustomSnackBar1(context, "Location services are disabled. Please enable the services");
-      // return false;
-    }
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        constants.showCustomSnackBar1(context, "Location permissions are denied");
-        // return false;
-      }
-    }
-    if (permission == LocationPermission.deniedForever) {
-      constants.showCustomSnackBar1(context, "Location permissions are permanently denied, we cannot request permissions.");
-      // return false;
-    }
-    Position position=await Geolocator.getCurrentPosition();
-    return position;
-  }
-
-
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: GoogleMap(
-        initialCameraPosition: initialCameraPosition,
-        markers: markers,
-        zoomControlsEnabled: false,
-      mapType: MapType.normal,
-      onMapCreated: (GoogleMapController controller){
-          googleMapController=controller;
-      },),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async{
-          Position position=await _handleLocationPermission();
-        googleMapController.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: LatLng(position.latitude, position.longitude),zoom: 14)));
-
-        markers.clear();
-        markers.add( Marker(markerId: MarkerId('currentlocation'),position: LatLng(position.latitude, position.longitude)));
-
-        setState(() {});
-
-      },label: Text("current Location"),),
-    );
-  }
-}
-//I want show list with onclick for particular city with some vertical spacing in list and search bar functionality then particular location came and currentLocation class getting error
