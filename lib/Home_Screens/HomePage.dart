@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:developer';
+import 'package:http/http.dart' as http;
+import 'package:scrapapp/Utility/constants.dart' as constant;
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:scrapapp/Utility/Widget_Helper.dart';
@@ -74,15 +78,6 @@ class _AddressBookPageState extends State<AddressBookPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   title: Text('Address Book'),
-      //   actions: [
-      //     IconButton(
-      //       icon: Icon(Icons.add),
-      //       onPressed: () => _navigateToEditAddressPage(),
-      //     ),
-      //   ],
-      // ),
       appBar: myappbar(context, 'Address Book', true),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
@@ -150,45 +145,24 @@ class _EditAddressPageState extends State<EditAddressPage> {
   late TextEditingController addressLine2Controller;
   late TextEditingController pinCodeController;
   String? selectedCity;
-  //remove cities list manual get from city through api
-  List<String> cities = ['Kalyan', 'Mumbai', 'Dombivli'];
+  // List<String> citylist = [];
 
-  getLocation() async {
-    try {
-      var response = await http.get(Uri.parse(
-        '${constant.apiLocalName}/getLocation',
-      ));
-      log(response.body);
-      if (response.statusCode == 200) {
-        var responseData = jsonDecode(response.body);
-        var LocationData = responseData['cities'];
-        return LocationData;
-      } else {
-        return throw Exception('Failed to Fetch Location: ${response.statusCode}');
-      }
-    } on Exception catch (e) {
-      print('Error during Location: $e');
-      rethrow;
-    }
-  }
-  
-  List? city;
+
+  List cities=[];
   initial() async {
-    //getlocation api there is list id,city,pincode
-    //i want cities in api city 
-    //and user selected city then pincode came from api and pincode field disable
-    city = await GlobalHelper().getLocation();
+    cities = await GlobalHelper().getLocation();
     setState(() {});
   }
+  
+
   @override
   void initState() {
     super.initState();
     titleController = TextEditingController(text: widget.address?.title);
     addressLine1Controller = TextEditingController(text: widget.address?.addressLine1);
     addressLine2Controller = TextEditingController(text: widget.address?.addressLine2);
-    pinCodeController = TextEditingController(text: widget.address?.pinCode);
-    // selectedCity=widget.
-    // initial();
+    // pinCodeController = TextEditingController(text: widget.address?.pinCode);
+    initial();
   }
 
   void saveAddress() {
@@ -209,18 +183,46 @@ class _EditAddressPageState extends State<EditAddressPage> {
       appBar: AppBar(
         title: Text(widget.address == null ? 'Add Address' : 'Edit Address'),
       ),
+      floatingActionButton: FloatingActionButton(onPressed: ()async{
+        GlobalHelper().getLocation();
+
+        //   print('Location:$Location');
+      }),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            //want Radio button Home and Work instead TextField
-            TextField(
-              controller: titleController,
-              decoration: InputDecoration(
-                labelText: 'Title (Home/Work)',
-                contentPadding:
-                  EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                border: OutlineInputBorder(),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all()
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: Text('Home'),
+                      value: 'Home',
+                      groupValue: titleController.text,
+                      onChanged: (value) {
+                        setState(() {
+                          titleController.text = value!;
+                        });
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: Text('Work'),
+                      value: 'Work',
+                      groupValue: titleController.text,
+                      onChanged: (value) {
+                        setState(() {
+                          titleController.text = value!;
+                        });
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
             Gap(10),
@@ -242,23 +244,35 @@ class _EditAddressPageState extends State<EditAddressPage> {
                 border: OutlineInputBorder(),),
             ),
             Gap(10),
-            DropdownButtonFormField<String>(
-              decoration: InputDecoration(contentPadding:
-              EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                border: OutlineInputBorder(),),
-              value: selectedCity,
-              hint: Text('Select City'),
-              items: cities.map((String city) {
-                return DropdownMenuItem<String>(
-                  value: city,
-                  child: Text(city),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedCity = newValue;
-                });
-              },
+            Container(
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(5),
+                  // color: Colors.white,
+                  border: Border.all(color: Colors.grey)),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: DropdownButton(
+                  value: selectedCity,
+                  dropdownColor: Colors.white,
+                  focusColor: Colors.white,
+                  isExpanded: true,
+                  hint: Text('Select City'),
+                  items: cities.map(
+                        (e) {
+                      return DropdownMenuItem(
+                        value: e['city'],
+                        child: Text(e['city']),
+                      );
+                    },
+                  ).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedCity = value.toString();
+                    });
+                    print(value);
+                  },
+                ),
+              ),
             ),
             Gap(10),
             TextField(
@@ -269,6 +283,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
                 EdgeInsets.symmetric(vertical: 10, horizontal: 20),
               border: OutlineInputBorder()),
               keyboardType: TextInputType.number,
+              enabled: false,
             ),
             SizedBox(height: 30),
             MyTextButton(
@@ -276,13 +291,13 @@ class _EditAddressPageState extends State<EditAddressPage> {
                 onPressed: ()async{
                   saveAddress();
                 },color: Theme.of(context).primaryColor,)
-            // ElevatedButton(
-            //   onPressed: saveAddress,
-            //   child: Text(widget.address == null ? 'Add Address' : 'Update Address'),
-            // ),
           ],
         ),
       ),
     );
   }
 }
+//I want when city select then automatic pincode get in getlocation api there city and pincode already there
+
+
+
