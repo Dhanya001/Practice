@@ -1,100 +1,140 @@
-class _RateCardState extends State<RateCard> {
-  int _currentIndex = 0;
-  final TextEditingController _searchcontroller = TextEditingController();
-  List<RateItemModel> _searchitems = [];
-  bool isSearchClicked = false;
-  List<RateItemModel>? rateItemModel;
-  bool noItemsInCategory = false; // New variable to track no items
-
-  initial() async {
-    rateItemModel = await GlobalHelper().getRateCards();
-    if (rateItemModel != null) {
-      if (widget.categoryId != null) {
-        rateItemModel = rateItemModel!.where((item) =>
-            item.categoryId.toString() == widget.categoryId.toString()).toList();
-        // Check if the filtered list is empty
-        noItemsInCategory = rateItemModel!.isEmpty;
-      } else {
-        rateItemModel = await GlobalHelper().getRateCards();
-      }
-    }
-    setState(() {});
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    initial();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        automaticallyImplyLeading: false,
-        title: isSearchClicked
-            ? Container(
-                height: 40,
+body: Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    Container(
+      color: Theme.of(context).primaryColor,
+      padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                width: 50,
+                height: 50,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(width: 2, color: Colors.white),
+                  shape: BoxShape.circle,
                 ),
-                child: TextFormField(
-                  controller: _searchcontroller,
-                  decoration: const InputDecoration(
-                    suffixIcon: Icon(Icons.search),
-                    contentPadding:
-                        EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                    border: InputBorder.none,
-                    hintText: "Search",
-                  ),
-                  onChanged: (value) => _runFilter(value),
-                ),
-              )
-            : const Text(
-                "Rate Card",
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 20,
-                  color: Colors.black,
+                child: userProfile!.userPic != null
+                    ? ClipOval(
+                        child: Image.network(
+                          '${userProfile!.userPic}',
+                          fit: BoxFit.cover,
+                          width: 50,
+                          height: 50,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) {
+                              return child;
+                            } else {
+                              return CircularProgressIndicator();
+                            }
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.person,
+                              size: 40,
+                              color: Colors.grey,
+                            );
+                          },
+                        ),
+                      )
+                    : Icon(
+                        Icons.person,
+                        size: 40,
+                        color: Colors.grey,
+                      ),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    MyExtraSmallText(
+                      title: greeting(),
+                      color: Colors.white,
+                    ),
+                    MyMediumText(
+                      title: userProfile!.uname ?? '',
+                      color: Colors.white,
+                    ),
+                  ],
                 ),
               ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-              onPressed: () {
-                setState(() {
-                  isSearchClicked = !isSearchClicked;
-                  if (!isSearchClicked) {
-                    _searchcontroller.clear();
-                  }
-                });
-              },
-              icon: Icon(isSearchClicked ? Icons.close : Icons.search_sharp))
+              IconButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => UpdateProfile()),
+                  );
+                },
+                icon: Image.asset("assets/update.png"),
+              ),
+            ],
+          ),
+          SizedBox(height: 20),
+          MySmallText(
+            title: "Available Balance",
+            color: Colors.white,
+          ),
+          MyMediumText(
+            title: "₹ 0",
+            color: Colors.white,
+          ),
         ],
       ),
-      body: _searchcontroller.text == ''
-          ? noItemsInCategory // Check if there are no items in the category
-              ? Center(
-                  child: const Text(
-                    "No items in this category!",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                )
-              : rateItemModel == null
-                  ? Container()
-                  : customgridview(rateItemModel!)
-          : _searchitems.isEmpty
-              ? Container(
-                  child: const Center(
-                      child: Text(
-                    "No result Found",
-                    style: TextStyle(color: Colors.black),
-                  )),
-                )
-              : customgridview(_searchitems),
-    );
-  }
+    ),
+    SizedBox(height: 20),
+    Text(
+      'My Transactions',
+      style: TextStyle(fontSize: 20, color: Colors.black),
+    ),
+    SizedBox(height: 10),
+    Expanded( // Use Expanded to allow the ListView to take the remaining space
+      child: customListView(userWalletModel!),
+    ),
+  ],
+),
+
+Widget customListView(List<UserWalletModel> userWalletModel) {
+  return Padding(
+    padding: const EdgeInsets.all(8),
+    child: ListView.builder(
+      itemCount: userWalletModel.length,
+      itemBuilder: (context, index) {
+        return transactionDetails(
+          context: context,
+          userWalletSingleItemModel: userWalletModel[index],
+        );
+      },
+    ),
+  );
+}
+
+Widget transactionDetails({
+  required BuildContext context,
+  required UserWalletModel userWalletSingleItemModel,
+}) {
+  return GestureDetector(
+    onTap: () {
+      // Handle tap
+    },
+    child: Padding(
+      padding: const EdgeInsets.all(8),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Transaction ID: ${userWalletSingleItemModel.userID.toString()}'),
+              // Add more details as needed
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }
