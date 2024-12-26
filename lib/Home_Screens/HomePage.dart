@@ -131,7 +131,7 @@ class _MyprofileState extends State<Myprofile> {
   String? userPic;
 
   List<UserWalletModel>? userWalletModel;
-  List<TransactionModel>? transactionModel;
+  // List<TransactionModel>? transactionModel;
   initial() async {
     userWalletModel = await GlobalHelper()
         .getWalletDetails(context, userProfile!.userID.toString());
@@ -157,13 +157,13 @@ class _MyprofileState extends State<Myprofile> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: myappbar(context, "My Profile", true),
-      // floatingActionButton: FloatingActionButton(
-      //   onPressed: () async {
-      //     var getWallet = await GlobalHelper()
-      //         .getWalletDetails(context, userProfile!.userID.toString());
-      //     print('wallet:$getWallet');
-      //   },
-      // ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          var getWallet = await GlobalHelper()
+              .getWalletDetails(context, userProfile!.userID.toString());
+          print('wallet:$getWallet');
+        },
+      ),
       body: userWalletModel == null
           ? Container()
           : Padding(
@@ -254,7 +254,8 @@ class _MyprofileState extends State<Myprofile> {
                     color: Colors.white,
                   ),
                   MyMediumText(
-                    title: "₹ 0",
+                    title: '100',
+                    // title: "₹${userWalletModel!.amount}",
                     color: Colors.white,
                   ),
                 ],
@@ -267,7 +268,7 @@ class _MyprofileState extends State<Myprofile> {
             ),
             SizedBox(height: 10),
             Expanded(
-              child: customListView(userWalletModel!,transactionModel!),
+              child: customListView(userWalletModel!),
             ),
           ],
         ),
@@ -276,15 +277,24 @@ class _MyprofileState extends State<Myprofile> {
   }
 }
 
-Widget customListView(List<UserWalletModel> userWalletModel,List<TransactionModel> transactionModel) {
+Widget customListView(List<UserWalletModel> userWalletModel) {
   return ListView.builder(
     itemCount: userWalletModel.length,
     itemBuilder: (context, index) {
-      return transactionDetails(
-        context: context,
-        userWalletSingleItemModel: userWalletModel[index],
-        transactionModel: transactionModel[index],
-      );
+      UserWalletModel walletModel = userWalletModel[index];
+      if (walletModel.transactions != null && walletModel.transactions!.isNotEmpty) {
+        return Column(
+          children: walletModel.transactions!.map((transaction) {
+            return transactionDetails(
+              context: context,
+              userWalletSingleItemModel: walletModel,
+              transactionModel: transaction,
+            );
+          }).toList(),
+        );
+      } else {
+        return Container();
+      }
     },
   );
 }
@@ -298,27 +308,32 @@ Widget transactionDetails({
     onTap: () {},
     child: Padding(
       padding: const EdgeInsets.all(8),
-      child: Card(
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.grey),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // transactionmodel.date check today yesterday and if its not then directly show that date
+              //that mention above transctiondetails container and available balance get from userealletmodel.amount instead manual 100
               Row(
                 children: [
-                  Icon(Icons.arrow_downward_outlined),
+                  Icon(transactionModel.transactionType=='credit'?Icons.arrow_downward_outlined:Icons.arrow_forward),
                   Gap(20),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        //getting null error  how to passed transactiontype
-                        Text(transactionModel.transactionType.toString()),
-                        Text('hello'),
+                        Text(transactionModel.transactionType ?? 'Unknown Transaction'),
+                        Text('from: '),
                       ],
                     ),
                   ),
-                  Text(userWalletSingleItemModel.amount.toString()),
+                  Text('₹${transactionModel.updatedAmt ?? 0}'),
                 ],
               )
             ],
@@ -329,5 +344,5 @@ Widget transactionDetails({
   );
 }
 
-//how to pass transaction type here i want transaction amount also
-
+// transactionmodel.date check today yesterday and if its not then directly show that date
+//that mention above transctiondetails container and available balance get from userealletmodel.amount instead manual 100
