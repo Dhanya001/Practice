@@ -19,7 +19,7 @@ class Address {
     required this.pinCode,
   });
 
-  // Factory constructor to create Address from a map
+  // Factory method to create an Address from a map
   factory Address.fromMap(Map<String, dynamic> map) {
     return Address(
       title: map['title'],
@@ -28,6 +28,17 @@ class Address {
       city: map['city'],
       pinCode: map['pincode'],
     );
+  }
+
+  // Method to convert Address to a map
+  Map<String, dynamic> toMap() {
+    return {
+      'title': title,
+      'addressline1': addressLine1,
+      'addressline2': addressLine2,
+      'city': city,
+      'pincode': pinCode,
+    };
   }
 }
 
@@ -42,16 +53,11 @@ class _AddressBookPageState extends State<AddressBookPage> {
   List<Address> searchResults = [];
 
   void userAddress() async {
-    try {
-      var userAddressMap = await GlobalHelper().getUser Address(context, userProfile!.userID.toString());
-      setState(() {
-        addresses = userAddressMap.map<Address>((address) => Address.fromMap(address)).toList();
-        searchResults = addresses;
-      });
-    } catch (e) {
-      // Handle error
-      print('Error fetching addresses: $e');
-    }
+    var userAddressMap = await GlobalHelper().getUser Address(context, userProfile!.userID.toString());
+    setState(() {
+      addresses = userAddressMap.map<Address>((map) => Address.fromMap(map)).toList();
+      searchResults = addresses;
+    });
   }
 
   @override
@@ -99,7 +105,9 @@ class _AddressBookPageState extends State<AddressBookPage> {
     return Scaffold(
       appBar: myappbar(context, 'Address Book', true),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _navigateToEditAddressPage(),
+        onPressed: () {
+          _navigateToEditAddressPage();
+        },
       ),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
@@ -110,8 +118,7 @@ class _AddressBookPageState extends State<AddressBookPage> {
               margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
               decoration: BoxDecoration(
                 border: Border.all(width: 2, color: Colors.grey),
-                borderRadius: BorderRadius.circular(16),
-              ),
+                borderRadius: BorderRadius.circular(16 ),
               child: TextField(
                 controller: searchController,
                 decoration: InputDecoration(
@@ -124,7 +131,8 @@ class _AddressBookPageState extends State<AddressBookPage> {
               ),
             ),
           ),
-          Expanded child: ListView.builder(
+          Expanded(
+            child: ListView.builder(
               itemCount: searchResults.length,
               itemBuilder: (context, index) {
                 final address = searchResults[index];
@@ -259,7 +267,10 @@ class _EditAddressPageState extends State<EditAddressPage> {
             ),
             Gap(10),
             Container(
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(5), border: Border.all(color: Colors.grey)),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(5),
+                border: Border.all(color: Colors.grey),
+              ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: DropdownButton(
@@ -273,7 +284,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
                       child: Text(e['city']),
                     );
                   }).toList(),
-                  onChanged: (value) {
+                  onChanged: (value ) {
                     setState(() {
                       selectedCity = value.toString();
                       final selectedCityData = cities.firstWhere(
@@ -322,4 +333,3 @@ class _EditAddressPageState extends State<EditAddressPage> {
       ),
     );
   }
-}
