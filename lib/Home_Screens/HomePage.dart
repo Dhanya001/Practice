@@ -7,6 +7,7 @@ import 'package:scrapapp/Utility/constants.dart' as constant;
 import 'Dashboard.dart';
 
 class Address {
+  int id;
   String title;
   String addressLine1;
   String addressLine2;
@@ -14,13 +15,26 @@ class Address {
   String pinCode;
 
   Address({
+    required this.id,
     required this.title,
     required this.addressLine1,
     required this.addressLine2,
     required this.city,
     required this.pinCode,
   });
+
+  factory Address.fromMap(Map<String, dynamic> map) {
+    return Address(
+      id: map['id'],
+      title: map['title'],
+      addressLine1: map['addressline1'],
+      addressLine2: map['addressline2'],
+      city: map['city'],
+      pinCode: map['pincode'],
+    );
+  }
 }
+
 
 class AddressBookPage extends StatefulWidget {
 
@@ -29,29 +43,23 @@ class AddressBookPage extends StatefulWidget {
 }
 
 class _AddressBookPageState extends State<AddressBookPage> {
-  List addresses = [];
+  List<Address> addresses = [];
   final TextEditingController searchController = TextEditingController();
-  List searchResults = [];
-  List userAddressMap=[];
-  // List userAddresses=[];
+  List<Address> searchResults = [];
 
 
   void userAddress() async {
-
-    var userAddressMap = await GlobalHelper().getUserAddress(context, userProfile!.userID.toString());
-    print('This is userAddressMap$userAddressMap');
-    //This is userAddressMap[{id: 7, title: Home, addressline1: drg, addressline2: drgg, city: Dombivli, pincode: 400612, user_id: 28}, {id: 8, title: Home, addressline1: fgg, addressline2: ghh, city: Dombivli, pincode: 400612, user_id: 28}]
-    //I want address list came from api that usermap and below in body addressline1,addressline2,city,title,pincode came from api
-    //i want same edit page titleController,addressLine1Controller,addressLine2Controller,citycontroller,pincodecontroller came from useraddress api
-    //I want proper addresspage editpage setup
-    setState(() {
-      addresses=userAddressMap;
-      searchResults = addresses;
-      print('yo2');
-      print(addresses);
-    });
-
-    // print('User Function Called: ${userAddressMap![index]['addressline1']}');
+    try {
+      var userAddressMap = await GlobalHelper().getUserAddress(context, userProfile!.userID.toString());
+      setState(() {
+        addresses = userAddressMap.map<Address>((address) => Address.fromMap(address)).toList();
+        searchResults = addresses;
+      });
+      print('This is my useraddressmap:${userAddressMap}');
+    } catch (e) {
+      // Handle error
+      print('Error fetching addresses: $e');
+    }
   }
 
   @override
@@ -133,21 +141,40 @@ class _AddressBookPageState extends State<AddressBookPage> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              itemCount: searchResults.length,
-              itemBuilder: (context, index) {
-                final address = searchResults[index];
-                return ListTile(
-                  // title: Text(address.title),
-                  subtitle: Text(
-                    '${address[index]['addressline1']}, ${address[index]['addressline2']}, ${address[index]['city']}, ${address[index]['pincode']}',
-                  ),
-                  trailing: IconButton(
-                    icon: Icon(Icons.edit),
-                    onPressed: () => _navigateToEditAddressPage(address: address),
-                  ),
-                );
-              },
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: ListView.builder(
+                itemCount: searchResults.length,
+                itemBuilder: (context, index) {
+                  final address = searchResults[index];
+                  return Container(
+                    decoration: BoxDecoration(
+                        border: Border(bottom: BorderSide(color: Colors.grey,width: 2))
+                    ),
+                    child: ListTile(
+                      leading: Icon(Icons.location_on),
+                      title: Text(address.title),
+                      subtitle: Text(
+                        '${address.addressLine1}, ${address.addressLine2}, ${address.city}, ${address.pinCode}',
+                      ),
+                      //here I want edit side by delete iconand selection address option also i want
+                      trailing: Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.edit),
+                            onPressed: () => _navigateToEditAddressPage(address: address),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete,),
+                            onPressed: () => _navigateToEditAddressPage(address: address),
+                          ),
+                        ],
+                      ),
+
+                    ),
+                  );
+                },
+              ),
             ),
           ),
           MyBottomButton(title: 'Add address', onPressed: (){
@@ -194,11 +221,13 @@ class _EditAddressPageState extends State<EditAddressPage> {
     addressLine1Controller = TextEditingController(text: widget.address?.addressLine1);
     addressLine2Controller = TextEditingController(text: widget.address?.addressLine2);
     pinCodeController = TextEditingController(text: widget.address?.pinCode);
+    selectedCity=widget.address?.city;
     initial();
   }
 
   void saveAddress() {
     final newAddress = Address(
+      id: widget.address!.id,
       title: titleController.text,
       addressLine1: addressLine1Controller.text,
       addressLine2: addressLine2Controller.text,
@@ -329,6 +358,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
                   var updateAddress=
                   await GlobalHelper().updateAddress(
                   userProfile!.userID.toString(),
+                      widget.address!.id.toString(),
                       titleController.text,
                       addressLine1Controller.text,
                       addressLine2Controller.text,
@@ -353,8 +383,4 @@ class _EditAddressPageState extends State<EditAddressPage> {
     );
   }
 }
-
-//This is userAddressMap[{id: 7, title: Home, addressline1: drg, addressline2: drgg, city: Dombivli, pincode: 400612, user_id: 28}, {id: 8, title: Home, addressline1: fgg, addressline2: ghh, city: Dombivli, pincode: 400612, user_id: 28}]
-//I want address list came from api that usermap and below in body addressline1,addressline2,city,title,pincode came from api
-//i want same edit page titleController,addressLine1Controller,addressLine2Controller,citycontroller,pincodecontroller came from useraddress api
-//I want proper addresspage editpage setup
+//here I want edit side by delete iconand selection address option also i want
