@@ -1,275 +1,352 @@
-import 'package:scrapapp/models/TransactionModel.dart';
-
-class UserWalletModel {
-  int? id;
-  int? userID;
-  int? amount;
-  List<TransactionModel>? transactions;
-
-  UserWalletModel({
-    this.id,
-    this.userID,
-    this.amount,
-    this.transactions,
-  });
-
-  UserWalletModel.from(Map<String, dynamic> map)
-      : id = map['id'],
-        userID = map['user_id'],
-        amount = map['amount'],
-        transactions = (map['transactions'] as List?)
-            ?.map((item) => TransactionModel.from(item))
-            .toList();
-
-  Map<String, Object?> toMap() {
-    return {
-      'id': id,
-      'user_id': userID,
-      'amount': amount,
-      'transactions': transactions?.map((e) => e.toMap()).toList(),
-    };
-  }
-}
-
-class TransactionModel {
-  int? transactionId;
-  String? transactionType;
-  int? previousAmt;
-  int? updatedAmt;
-  int? finalAmt;
-  String? date;
-
-  TransactionModel({
-    this.transactionId,
-    this.transactionType,
-    this.previousAmt,
-    this.updatedAmt,
-    this.finalAmt,
-    this.date,
-  });
-
-  TransactionModel.from(Map<String, dynamic> map)
-      : transactionId = map['transcation_id'],
-        transactionType = map['transaction_type'],
-        previousAmt = map['pervious_amt'],
-        updatedAmt = map['updated_amt'],
-        finalAmt=map['final_amt'],
-        date=map['date'];
-
-  Map<String, Object?> toMap() {
-    return {
-      'transcation_id': transactionId,
-      'transaction_type': transactionType,
-      'pervious_amt': previousAmt,
-      'updated_amt': updatedAmt,
-      'final_amt':finalAmt,
-      'date':date,
-    };
-  }
-}
-
-Future<List<UserWalletModel>?> getWalletDetails(
-    BuildContext context,
-    String id
-    ) async {
-  try {
-    var response = await http.get(
-      Uri.parse('${constant.apiLocalName}/getWallet?id=$id'),
-    );
-    if (response.statusCode == 200) {
-      var responseData = jsonDecode(response.body);
-      var walletData = responseData['wallet'];
-
-
-      List<UserWalletModel> walletItemList = [
-        UserWalletModel.from(walletData)
-      ];
-
-      print('API updated user $id wallet');
-      print(walletData);
-      return walletItemList;
-    } else {
-      print('API not updated user $id wallet');
-      return null;
-    }
-  } on Exception catch (e) {
-    print('error: $e ---');
-    constant.showErrorDialog(
-      context,
-      'Error',
-      'We are facing some technical issues !',
-      icon: const Icon(
-        Icons.error,
-        color: Colors.red,
-      ),
-    );
-  }
-}
-
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:scrapapp/Utility/Widget_Helper.dart';
 import 'package:scrapapp/Utility/global_helper.dart';
-import 'package:scrapapp/models/TransactionModel.dart';
-import 'package:scrapapp/models/user_Wallet_Model.dart';
-import 'package:scrapapp/screens/Profie_Screens/Dashboard.dart';
-import 'package:scrapapp/screens/Profie_Screens/UpdateProfile.dart';
+import 'package:scrapapp/Utility/constants.dart' as constant;
 
-class Myprofile extends StatefulWidget {
-  // final UserModel? userProfile;
-  const Myprofile({super.key});
+import 'Dashboard.dart';
 
-  @override
-  State<Myprofile> createState() => _MyprofileState();
+class Address {
+  String title;
+  String addressLine1;
+  String addressLine2;
+  String city;
+  String pinCode;
+
+  Address({
+    required this.title,
+    required this.addressLine1,
+    required this.addressLine2,
+    required this.city,
+    required this.pinCode,
+  });
 }
 
-class _MyprofileState extends State<Myprofile> {
-  String? name;
-  String? username;
-  String? email;
-  String? phone;
-  String? userPic;
+class AddressBookPage extends StatefulWidget {
 
-  List<UserWalletModel>? userWalletModel;
-  // List<TransactionModel>? transactionModel;
-  initial() async {
-    userWalletModel = await GlobalHelper()
-        .getWalletDetails(context, userProfile!.userID.toString());
-    setState(() {});
-    print('yo');
-    print(userWalletModel!.length);
-    print(userWalletModel!.toString());
+  @override
+  _AddressBookPageState createState() => _AddressBookPageState();
+}
+
+class _AddressBookPageState extends State<AddressBookPage> {
+  List addresses = [];
+  final TextEditingController searchController = TextEditingController();
+  List searchResults = [];
+  List userAddressMap=[];
+  // List userAddresses=[];
+
+
+  void userAddress() async {
+
+    var userAddressMap = await GlobalHelper().getUserAddress(context, userProfile!.userID.toString());
+    print('This is userAddressMap$userAddressMap');
+    //This is userAddressMap[{id: 7, title: Home, addressline1: drg, addressline2: drgg, city: Dombivli, pincode: 400612, user_id: 28}, {id: 8, title: Home, addressline1: fgg, addressline2: ghh, city: Dombivli, pincode: 400612, user_id: 28}]
+    //I want address list came from api that usermap and below in body addressline1,addressline2,city,title,pincode came from api
+    //i want same edit page titleController,addressLine1Controller,addressLine2Controller,citycontroller,pincodecontroller came from useraddress api
+    //I want proper addresspage editpage setup
+    setState(() {
+      addresses=userAddressMap;
+      searchResults = addresses;
+      print('yo2');
+      print(addresses);
+    });
+
+    // print('User Function Called: ${userAddressMap![index]['addressline1']}');
   }
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    initial();
+    userAddress();
+    searchResults = addresses;
+    print('yo');
+    print(addresses);
+  }
 
-    // print(userProfile!.userEmail);
-    // print(userProfile!.uname);
-    // print('This is image: ${userProfile!.userPic}');
+
+  void runFilter(String keyword) {
+    if (keyword.isEmpty) {
+      setState(() {
+        searchResults = addresses;
+      });
+    } else {
+      setState(() {
+        searchResults = addresses
+            .where((address) =>
+            address.title.toLowerCase().contains(keyword.toLowerCase()))
+            .toList();
+      });
+    }
+  }
+
+  void _navigateToEditAddressPage({Address? address}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditAddressPage(
+          address: address,
+          onSave: (newAddress) {
+            setState(() {
+              if (address != null) {
+                int index = addresses.indexOf(address);
+                addresses[index] = newAddress;
+              } else {
+                addresses.add(newAddress);
+              }
+              searchResults = addresses;
+            });
+          },
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: myappbar(context, 'Address Book', true),
+      floatingActionButton: FloatingActionButton(onPressed: () async{
+        var getAddress=await GlobalHelper().getUserAddress(context, userProfile!.userID.toString());
+        print(getAddress);
+      },),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: myappbar(context, "My Profile", true),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          var getWallet = await GlobalHelper()
-              .getWalletDetails(context, userProfile!.userID.toString());
-          print('wallet:$getWallet');
-        },
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+            decoration: BoxDecoration(
+                border: Border.all(width: 2, color: Colors.grey),
+                borderRadius: BorderRadius.circular(16)),
+              child: TextField(
+                controller: searchController,
+                decoration: InputDecoration(
+                  suffixIcon: Icon(Icons.search),
+                contentPadding:
+                    EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                border: InputBorder.none,
+                  labelText: 'Search Address',
+                ),
+                onChanged: runFilter,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: searchResults.length,
+              itemBuilder: (context, index) {
+                final address = searchResults[index];
+                return ListTile(
+                  // title: Text(address.title),
+                  subtitle: Text(
+                    '${address[index]['addressline1']}, ${address[index]['addressline2']}, ${address[index]['city']}, ${address[index]['pincode']}',
+                  ),
+                  trailing: IconButton(
+                    icon: Icon(Icons.edit),
+                    onPressed: () => _navigateToEditAddressPage(address: address),
+                  ),
+                );
+              },
+            ),
+          ),
+          MyBottomButton(title: 'Add address', onPressed: (){
+            _navigateToEditAddressPage();
+          })
+        ],
       ),
-      body: userWalletModel == null
-          ? Container()
-          : Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+    );
+  }
+}
+
+
+
+class EditAddressPage extends StatefulWidget {
+  final Address? address;
+  final Function(Address) onSave;
+
+  EditAddressPage({this.address, required this.onSave});
+
+  @override
+  _EditAddressPageState createState() => _EditAddressPageState();
+}
+
+class _EditAddressPageState extends State<EditAddressPage> {
+  late TextEditingController titleController;
+  late TextEditingController addressLine1Controller;
+  late TextEditingController addressLine2Controller;
+  late TextEditingController pinCodeController;
+  String? selectedCity;
+  // List<String> citylist = [];
+
+
+  List cities=[];
+  initial() async {
+    cities = await GlobalHelper().getLocation();
+    setState(() {});
+  }
+  
+
+  @override
+  void initState() {
+    super.initState();
+    titleController = TextEditingController(text: widget.address?.title);
+    addressLine1Controller = TextEditingController(text: widget.address?.addressLine1);
+    addressLine2Controller = TextEditingController(text: widget.address?.addressLine2);
+    pinCodeController = TextEditingController(text: widget.address?.pinCode);
+    initial();
+  }
+
+  void saveAddress() {
+    final newAddress = Address(
+      title: titleController.text,
+      addressLine1: addressLine1Controller.text,
+      addressLine2: addressLine2Controller.text,
+      city: selectedCity ?? 'Unknown ',
+      pinCode: pinCodeController.text,
+    );
+    widget.onSave(newAddress);
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.address == null ? 'Add Address' : 'Edit Address'),
+      ),
+      // floatingActionButton: FloatingActionButton(onPressed: ()async{
+      //   GlobalHelper().getLocation();
+      //
+      //   //   print('Location:$Location');
+      // }),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              color: Theme.of(context).primaryColor,
-              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              decoration: BoxDecoration(
+                border: Border.all()
+              ),
+              child: Row(
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          border:
-                          Border.all(width: 2, color: Colors.white),
-                          shape: BoxShape.circle,
-                        ),
-                        child: userProfile!.userPic != null
-                            ? ClipOval(
-                          child: Image.network(
-                            '${userProfile!.userPic}',
-                            fit: BoxFit.cover,
-                            width: 50,
-                            height: 50,
-                            loadingBuilder:
-                                (context, child, loadingProgress) {
-                              if (loadingProgress == null) {
-                                return child;
-                              } else {
-                                return CircularProgressIndicator();
-                              }
-                            },
-                            errorBuilder:
-                                (context, error, stackTrace) {
-                              return Icon(
-                                Icons.person,
-                                size: 40,
-                                color: Colors.grey,
-                              );
-                            },
-                          ),
-                        )
-                            : Icon(
-                          Icons.person,
-                          size: 40,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            MyExtraSmallText(
-                              title: greeting(),
-                              color: Colors.white,
-                            ),
-                            MyMediumText(
-                              title: userProfile!.uname ?? '',
-                              color: Colors.white,
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => UpdateProfile()),
-                          );
-                        },
-                        icon: Image.asset("assets/update.png"),
-                      ),
-                    ],
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: Text('Home'),
+                      value: 'Home',
+                      groupValue: titleController.text,
+                      onChanged: (value) {
+                        setState(() {
+                          titleController.text = value!;
+                        });
+                      },
+                    ),
                   ),
-                  SizedBox(height: 20),
-                  MySmallText(
-                    title: "Available Balance",
-                    color: Colors.white,
-                  ),
-                  MyMediumText(
-                    title: '100',
-                    // title: "₹${userWalletModel!.amount}",
-                    color: Colors.white,
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: Text('Work'),
+                      value: 'Work',
+                      groupValue: titleController.text,
+                      onChanged: (value) {
+                        setState(() {
+                          titleController.text = value!;
+                        });
+                      },
+                    ),
                   ),
                 ],
               ),
             ),
-            SizedBox(height: 20),
-            Text(
-              'My Transactions',
-              style: TextStyle(fontSize: 20, color: Colors.black),
+            Gap(10),
+            TextField(
+              controller: addressLine1Controller,
+              decoration: InputDecoration(
+                  labelText: 'Address Line 1',
+                contentPadding:
+                EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                border: OutlineInputBorder(),
+              ),
             ),
-            SizedBox(height: 10),
-            Expanded(
-              child: customListView(userWalletModel!),
+            Gap(10),
+            TextField(
+              controller: addressLine2Controller,
+              decoration: InputDecoration(labelText: 'Address Line 2',
+                contentPadding:
+                EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                border: OutlineInputBorder(),),
             ),
+            Gap(10),
+            Container(
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(5),
+                  // color: Colors.white,
+                  border: Border.all(color: Colors.grey)),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: DropdownButton(
+                  value: selectedCity,
+                  dropdownColor: Colors.white,
+                  focusColor: Colors.white,
+                  isExpanded: true,
+                  hint: Text('Select City'),
+                  items: cities.map(
+                        (e) {
+                      return DropdownMenuItem(
+                        value: e['city'],
+                        child: Text(e['city']),
+
+                      );
+                    },
+                  ).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedCity = value.toString();
+                      final selectedCityData = cities.firstWhere(
+                              (city) => city['city'] == selectedCity,
+                          orElse: () => {'pincode': ''});
+                      pinCodeController.text = selectedCityData['pincode'] ?? '';
+                    });
+                    print(value);
+                  },
+                ),
+              ),
+            ),
+            Gap(10),
+            TextField(
+              controller: pinCodeController,
+              decoration: InputDecoration(
+                  labelText: 'Pin Code',
+                contentPadding:
+                EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              border: OutlineInputBorder()),
+              keyboardType: TextInputType.number,
+              enabled:false,
+            ),
+            SizedBox(height: 30),
+            MyTextButton(
+                title: widget.address == null ? '  Add Address  ' : '  Update Address  ',
+                onPressed: ()async{
+                  var updateAddress=
+                  await GlobalHelper().updateAddress(
+                  userProfile!.userID.toString(),
+                      titleController.text,
+                      addressLine1Controller.text,
+                      addressLine2Controller.text,
+                      selectedCity!,
+                      pinCodeController.text);
+                  print('address: $updateAddress');
+                  if (updateAddress['success'] == true) {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => AddressBookPage()),
+                    );
+                  }
+                  else {
+                    constant.showCustomSnackBar1(context, "");
+                  }
+                  saveAddress();
+                },color: Theme.of(context).primaryColor,)
           ],
         ),
       ),
@@ -277,72 +354,7 @@ class _MyprofileState extends State<Myprofile> {
   }
 }
 
-Widget customListView(List<UserWalletModel> userWalletModel) {
-  return ListView.builder(
-    itemCount: userWalletModel.length,
-    itemBuilder: (context, index) {
-      UserWalletModel walletModel = userWalletModel[index];
-      if (walletModel.transactions != null && walletModel.transactions!.isNotEmpty) {
-        return Column(
-          children: walletModel.transactions!.map((transaction) {
-            return transactionDetails(
-              context: context,
-              userWalletSingleItemModel: walletModel,
-              transactionModel: transaction,
-            );
-          }).toList(),
-        );
-      } else {
-        return Container();
-      }
-    },
-  );
-}
-
-Widget transactionDetails({
-  required BuildContext context,
-  required UserWalletModel userWalletSingleItemModel,
-  required TransactionModel transactionModel,
-}) {
-  return GestureDetector(
-    onTap: () {},
-    child: Padding(
-      padding: const EdgeInsets.all(8),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Colors.grey),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // transactionmodel.date check today yesterday and if its not then directly show that date
-              //that mention above transctiondetails container and available balance get from userealletmodel.amount instead manual 100
-              Row(
-                children: [
-                  Icon(transactionModel.transactionType=='credit'?Icons.arrow_downward_outlined:Icons.arrow_forward),
-                  Gap(20),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(transactionModel.transactionType ?? 'Unknown Transaction'),
-                        Text('from: '),
-                      ],
-                    ),
-                  ),
-                  Text('₹${transactionModel.updatedAmt ?? 0}'),
-                ],
-              )
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-// transactionmodel.date check today yesterday and if its not then directly show that date
-//that mention above transctiondetails container and available balance get from userealletmodel.amount instead manual 100
+//This is userAddressMap[{id: 7, title: Home, addressline1: drg, addressline2: drgg, city: Dombivli, pincode: 400612, user_id: 28}, {id: 8, title: Home, addressline1: fgg, addressline2: ghh, city: Dombivli, pincode: 400612, user_id: 28}]
+//I want address list came from api that usermap and below in body addressline1,addressline2,city,title,pincode came from api
+//i want same edit page titleController,addressLine1Controller,addressLine2Controller,citycontroller,pincodecontroller came from useraddress api
+//I want proper addresspage editpage setup
