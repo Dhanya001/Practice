@@ -1,70 +1,197 @@
-class _AddressBookPageState extends State<AddressBookPage> {
-  // ... existing code ...
-
-  void _deleteAddress(Address address) async {
-    // Call your API to delete the address
-    var response = await GlobalHelper().deleteAddress(userProfile!.userID.toString(), address.id.toString());
-    
-    if (response['success'] == true) {
-      setState(() {
-        addresses.remove(address);
-        searchResults.remove(address);
-      });
-      constant.showCustomSnackBar1(context, "Address deleted successfully");
-    } else {
-      constant.showCustomSnackBar1(context, "Failed to delete address");
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: myappbar(context, 'Address Book', true),
-      // ... existing code ...
-      body: Column(
-        children: [
-          // ... existing code ...
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ListView.builder(
-                itemCount: searchResults.length,
-                itemBuilder: (context, index) {
-                  final address = searchResults[index];
-                  return Container(
-                    decoration: BoxDecoration(
-                      border: Border(bottom: BorderSide(color: Colors.grey, width: 2))
-                    ),
-                    child: ListTile(
-                      leading: Icon(Icons.location_on),
-                      title: Text(address.title),
-                      subtitle: Text(
-                        '${address.addressLine1}, ${address.addressLine2}, ${address.city}, ${address.pinCode}',
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.edit),
-                            onPressed: () => _navigateToEditAddressPage(address: address),
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.delete),
-                            onPressed: () => _deleteAddress(address), // Call delete method
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+void initialPay(
+    BuildContext context,
+    String sessionId,
+    String orderId,
+    String amount,
+    String studentId,
+    String cf_id,
+    String currentYear,
+    String installments,
+    String installment_id,
+    Function onPaymentSuccess
+    ) {
+  var session = CFSessionBuilder()
+      .setEnvironment(CFEnvironment.SANDBOX)
+      .setOrderId(orderId)
+      .setPaymentSessionId(sessionId)
+      .build();
+  var cfWebCheckout = CFWebCheckoutPaymentBuilder().setSession(session).build();
+  var cfPaymentGateway = CFPaymentGatewayService();
+  cfPaymentGateway.setCallback(
+    (p0) async{
+      // InitCashFreePayment().orderStatus(orderId);
+       onPaymentSuccess();
+  
+      await GlobalHelper().paymentResponse(
+          orderId, studentId, currentYear, installments, installment_id);
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentSuccessful(
+              amount: amount,
+              transactionId: '4849398439static',
+             isSuccessStatus: true,
             ),
-          ),
-          MyBottomButton(title: 'Add address', onPressed: (){
-            _navigateToEditAddressPage();
-          })
-        ],
-      ),
-    );
-  }
+          ));
+
+      print('Payment successful p0: $p0}');
+      print('Payment successful cf_order_id: $cf_id}');
+      print('Payment successful sessionId: $sessionId}');
+      print('Payment successful orderId: $orderId}');
+      print('Payment successful amount: $amount}');
+      print('Payment successful studentId: $studentId}');
+    },
+    (p0, p1) async {
+      // await InitCashFreePayment().orderStatus(cf_id);
+
+     await GlobalHelper().paymentResponse(
+          orderId, studentId, currentYear, installments, installment_id);
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentSuccessful(
+              amount: amount,
+              transactionId: '4849398439static',
+              isSuccessStatus: false,
+            ),
+          ));
+      print('Payment failed p0.getMessage(): ${p0.getMessage()}');
+      print('Payment failed p0.getCode(): ${p0.getCode()}');
+      print('Payment failed p0.getStatus(): ${p0.getStatus()}');
+      print('Payment failed p0.getType(): ${p0.getType()}');
+
+      print('Payment failed cf_order_id: $cf_id');
+      print('Payment failed p1: $p1');
+      print('Payment failed sessionId: $sessionId}');
+      print('Payment failed orderId: $orderId}');
+      print('Payment failed amount: $amount}');
+      print('Payment failed studentId: $studentId}');
+    },
+  );
+  cfPaymentGateway.doPayment(cfWebCheckout);
 }
+
+                                            InitCashFreePayment().createOrder(
+                                            context,
+                                            paymentInitialStoreInfoResponse[
+                                                'reference_no'],
+
+                                            paymentInitialStoreInfoResponse[
+                                            'total_fees'],
+
+                                            widget.studentId,
+                                            "${widget.studentModel.name} ${widget.studentModel.fatherName} ${widget.studentModel.surname}",
+                                            widget.studentModel.fatherEmail!,
+                                            widget.studentModel.fatherNumber
+                                                .toString(),
+                                            feesDetails[index][
+                                                    'online_admission_fees_id']
+                                                .toString(),
+                                            feesDetails[index]['installment']
+                                                .toString(),
+                                            widget.currentYear,
+                                            (){
+                                              setState(() {});
+                                            }
+                                            );
+											
+
+
+
+-----------------------------------------
+
+  
+void initialPay(
+    BuildContext context,
+    String sessionId,
+    String orderId,
+    String amount,
+    String studentId,
+    String cf_id,
+    String currentYear,
+    String installments,
+    String installment_id) {
+  var session = CFSessionBuilder()
+      .setEnvironment(CFEnvironment.SANDBOX)
+      .setOrderId(orderId)
+      .setPaymentSessionId(sessionId)
+      .build();
+  var cfWebCheckout = CFWebCheckoutPaymentBuilder().setSession(session).build();
+  var cfPaymentGateway = CFPaymentGatewayService();
+  cfPaymentGateway.setCallback(
+    (p0) async{
+      String actualTransactionId = cf_id;
+       String actualAmount = amount;
+      // InitCashFreePayment().orderStatus(orderId);
+      await GlobalHelper().paymentResponse(
+          orderId, studentId, currentYear, installments, installment_id);
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentSuccessful(
+              amount: actualAmount,
+              transactionId: actualTransactionId,
+             isSuccessStatus: true,
+            ),
+          ));
+
+      print('Payment successful p0: $p0}');
+      print('Payment successful cf_order_id: $cf_id}');
+      print('Payment successful sessionId: $sessionId}');
+      print('Payment successful orderId: $orderId}');
+      print('Payment successful amount: $amount}');
+      print('Payment successful studentId: $studentId}');
+    },
+    (p0, p1) async {
+      // await InitCashFreePayment().orderStatus(cf_id);
+
+     await GlobalHelper().paymentResponse(
+          orderId, studentId, currentYear, installments, installment_id);
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentSuccessful(
+              amount: actualAmount,
+              transactionId: 'Transaction failed',
+              isSuccessStatus: false,
+            ),
+          ));
+      print('Payment failed p0.getMessage(): ${p0.getMessage()}');
+      print('Payment failed p0.getCode(): ${p0.getCode()}');
+      print('Payment failed p0.getStatus(): ${p0.getStatus()}');
+      print('Payment failed p0.getType(): ${p0.getType()}');
+
+      print('Payment failed cf_order_id: $cf_id');
+      print('Payment failed p1: $p1');
+      print('Payment failed sessionId: $sessionId}');
+      print('Payment failed orderId: $orderId}');
+      print('Payment failed amount: $amount}');
+      print('Payment failed studentId: $studentId}');
+    },
+  );
+  cfPaymentGateway.doPayment(cfWebCheckout);
+}
+
+InitCashFreePayment().createOrder(
+                                            context,
+                                            paymentInitialStoreInfoResponse[
+                                                'reference_no'],
+
+                                            paymentInitialStoreInfoResponse[
+                                            'total_fees'],
+
+                                            widget.studentId,
+                                            "${widget.studentModel.name} ${widget.studentModel.fatherName} ${widget.studentModel.surname}",
+                                            widget.studentModel.fatherEmail!,
+                                            widget.studentModel.fatherNumber
+                                                .toString(),
+                                            feesDetails[index][
+                                                    'online_admission_fees_id']
+                                                .toString(),
+                                            feesDetails[index]['installment']
+                                                .toString(),
+                                            widget.currentYear);
+setState(() {
+                                              feesDetails.clear(); 
+                                               });
+
