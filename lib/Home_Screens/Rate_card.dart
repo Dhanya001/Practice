@@ -18,12 +18,14 @@ class FeesScreen extends StatefulWidget {
   final String studentId;
   final String currentYear;
   final StudentModel studentModel;
-  const FeesScreen(
-      {super.key,
-      required this.studentId,
-      required this.currentYear,
-      required this.studentModel});
-  
+
+  const FeesScreen({
+    super.key,
+    required this.studentId,
+    required this.currentYear,
+    required this.studentModel,
+  });
+
   @override
   State<FeesScreen> createState() => _FeesScreenState();
 }
@@ -35,22 +37,45 @@ class _FeesScreenState extends State<FeesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: constants.backgroundColor,
-        appBar: appbar(context, 'Fees', 'Installment'),
-        floatingActionButton: FloatingActionButton(onPressed: () async {
-          var feedetails1 = await GlobalHelper().feeDetails(widget.studentId);
-          print('Dhnanajay');
-          print(feedetails1);
-        }),
-        body: FutureBuilder(
-          future: GlobalHelper().feeDetails(widget.studentId),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.done) {
-              if (snapshot.hasData) {
-                paymentHistoryModel = snapshot.data as List<PaymentHistoryModel>;
-                List<dynamic> feesDataList = [];
+      backgroundColor: constants.backgroundColor,
+      appBar: appbar(context, 'Fees', 'Installment', widgetList: [
+        PopupMenuButton(
+          iconColor: Colors.white,
+          color: Colors.white,
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FeesHistoryScreen(
+                        studentModel: widget.studentModel,
+                        currentYear: widget.currentYear,
+                        studentId: widget.studentId,
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Payment History'),
+              ),
+            ),
+          ],
+        ),
+        Gap(15),
+      ]),
+      body: FutureBuilder(
+        future: GlobalHelper().feeDetails(widget.studentId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            if (snapshot.hasData) {
+              // Check if the data is of the expected type
+              if (snapshot.data is Map<String, dynamic>) {
                 Map<String, dynamic> mapData = snapshot.data as Map<String, dynamic>;
-                feesDataList = mapData['installments'] as List<dynamic>;
+                List<dynamic> feesDataList = mapData['installments'] as List<dynamic>;
+
+                // Ensure paymentHistoryModel is populated correctly
+                paymentHistoryModel = mapData['paymentHistory'] as List<PaymentHistoryModel>? ?? [];
 
                 return SingleChildScrollView(
                   physics: ScrollPhysics(),
@@ -63,33 +88,46 @@ class _FeesScreenState extends State<FeesScreen> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemBuilder: (context, index) {
+                          if (index >= feesDataList.length) {
+                            return Container(); // Prevent out of range access
+                          }
+
                           feesDetails.add(feesDataList[index]['\u0000yii\\db\\BaseActiveRecord\u0000_attributes']);
-                          return feesDetails[index]['total_fees'] == 0
-                              ? Container()
-                              : Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: InstallmentsWidget(
-                                    callback: () async {
-                                      // Directly navigate to PaymentReceipt
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => PaymentReceipt(
-                                            paymentHistoryModel: paymentHistoryModel[index],
-                                            studentModel: widget.studentModel,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    title: "Installment ${feesDetails[index]['installment']}",
-                                    paid: feesDetails[index]['total_fees'].toString(),
-                                    due: mapData['balance_fees'].toString(),
-                                    btn: "View Receipt",
-                                    color: HexColor('#135E9E'),
-                                    paymentHistoryModel: paymentHistoryModel[index],
-                                    studentModel: widget.studentModel,
-                                  ),
-                                );
+                          if (feesDetails[index]['total_fees'] == 0) {
+                            return Container(); // Skip if total fees is 0
+                          }
+
+                          return Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: InstallmentsWidget(
+                              callback: () async {
+                                // Check if paymentHistoryModel has data for the index
+                                if (index < paymentHistoryModel.length) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => PaymentReceipt(
+                                        paymentHistoryModel: paymentHistoryModel[index],
+                                        studentModel: widget.studentModel,
+                                      ),
+                                    ),
+                                  );
+                                } else {
+                                  // Handle the case where there is no corresponding payment history
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('No payment history available for this installment')),
+                                  );
+                                }
+                              },
+                              title: "Installment ${feesDetails[index]['installment']}",
+                              paid: feesDetails[index]['total_fees'].toString(),
+                              due: mapData['balance_fees'].toString(),
+                              btn: "View Receipt",
+                              color: HexColor('#135E9E'),
+                              paymentHistoryModel: paymentHistoryModel.isNotEmpty && index < paymentHistoryModel.length ? paymentHistoryModel[index] : null,
+                              studentModel: widget.studentModel,
+                            ),
+                          );
                         },
                       ),
                       const Gap(20),
@@ -118,10 +156,10 @@ class _FeesScreenState extends State<FeesScreen> {
                                   ),
                                   FeesColumn(
                                     firstVal: "Total Balance",
-                                    secondVal : mapData['balance_fees'].toString(),
+                                    secondVal: mapData['balance_fees'].toString(),
                                   ),
                                 ],
-                              )
+                              ),
                             ],
                           ),
                         ),
@@ -131,13 +169,17 @@ class _FeesScreenState extends State<FeesScreen> {
                   ),
                 );
               } else {
-                return const Center(child: Text('No Data'));
+                return const Center(child: Text('Data format is incorrect'));
               }
             } else {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: Text('No Data'));
             }
-          },
-        ));
+          } else {
+            return const Center(child: CircularProgressIndicator());
+          }
+        },
+      ),
+    );
   }
 }
 
@@ -148,7 +190,7 @@ class InstallmentsWidget extends StatelessWidget {
   final String btn;
   final Color color;
   final VoidCallback callback;
-  final PaymentHistoryModel paymentHistoryModel;
+  final PaymentHistoryModel? paymentHistoryModel; // Nullable
   final StudentModel studentModel;
 
   const InstallmentsWidget({
@@ -179,7 +221,7 @@ class InstallmentsWidget extends StatelessWidget {
               MyTextMedium(
                 title: title,
                 color: HexColor("#0C6992"),
-              )
+              ),
             ],
           ),
           Row(
@@ -223,7 +265,12 @@ class InstallmentsWidget extends StatelessWidget {
 class FeesColumn extends StatelessWidget {
   final String firstVal;
   final String secondVal;
-  const FeesColumn({super.key, required this.firstVal, required this.secondVal});
+
+  const FeesColumn({
+    super.key,
+    required this.firstVal,
+    required this.secondVal,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -235,4 +282,6 @@ class FeesColumn extends StatelessWidget {
       ],
     );
   }
-}
+} 
+
+This code includes checks to ensure that the lists are not empty before accessing their elements, which should help prevent the "RangeError" you were encountering. If the `paymentHistoryModel` does not have a corresponding entry for the index, it will show a message instead of causing an error.
