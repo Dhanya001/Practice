@@ -1,68 +1,104 @@
-void _onDaySelected(DateTime selectedDate, DateTime focusedDay) async {
-  DateTime now = DateTime.now();
-  DateTime today = DateTime(now.year, now.month, now.day);
+import 'package:flutter/material.dart';
 
-  if (selectedDate.isBefore(today)) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const MySmallText(title: "Invalid Date"),
-          content: const MySmallText(
-              title: "Please select today's date or a future date."),
-          actions: [
-            TextButton(
-              child: const Text("OK"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  } else {
-    setState(() {
-      _focusedDay = selectedDate;
-      _selectedDate = selectedDate;
-      _isLoading = true;
-    });
-
-    // Fetch time slots only if the selected date is different from the focused day
-    if (!isSameDay(selectedDate, focusedDay)) {
-      String formattedDate = DateFormat('dd-MM-yyyy').format(selectedDate);
-      var timeslotData = await GlobalHelper().getTimeslot(formattedDate);
-      setState(() {
-        _fetchedTimeSlots = timeslotData;
-        _isLoading = false;
-      });
-    }
-  }
+class OrderDieselPage extends StatefulWidget {
+  @override
+  _OrderDieselPageState createState() => _OrderDieselPageState();
 }
 
+class _OrderDieselPageState extends State<OrderDieselPage> {
+  // Dropdown options
+  final List<String> purposes = ["Generator", "Vehicle", "Agriculture", "Other"];
+  final List<String> quantities = ["10L", "20L", "50L", "100L", "Custom"];
 
-GestureDetector(
-  onTap: () {
-    FocusScope.of(context).unfocus(); // Dismiss the keyboard
-  },
-  child: Container(
-    margin: const EdgeInsets.only(left: 10),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      border: Border.all(width: 2, color: Colors.grey),
-    ),
-    child: TextFormField(
-      controller: weightController,
-      keyboardType: TextInputType.numberWithOptions(decimal: true),
-      decoration: const InputDecoration(
-        contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-        border: InputBorder.none,
-        hintText: "Enter Estimate Weight",
+  // Selected values
+  String? selectedPurpose;
+  String? selectedQuantity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Order Diesel'),
+        centerTitle: true,
       ),
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$')),
-      ],
-      onChanged: _onWeightChanged,
-    ),
-  ),
-)
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Purpose dropdown
+            Text(
+              "Purpose of Diesel",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: selectedPurpose,
+              hint: Text("Select Purpose"),
+              items: purposes.map((purpose) {
+                return DropdownMenuItem(
+                  value: purpose,
+                  child: Text(purpose),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  selectedPurpose = value;
+                });
+              },
+              decoration: InputDecoration(
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 20),
+
+            // Quantity dropdown
+            Text(
+              "Select Quantity",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: selectedQuantity,
+              hint: Text("Select Quantity"),
+              items: quantities.map((qty) {
+                return DropdownMenuItem(
+                  value: qty,
+                  child: Text(qty),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  selectedQuantity = value;
+                });
+              },
+              decoration: InputDecoration(
+                border: OutlineInputBorder(),
+              ),
+            ),
+
+            Spacer(),
+
+            // Next button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: selectedPurpose != null && selectedQuantity != null
+                    ? () {
+                        // Navigate to the next page or perform an action
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("Order placed successfully!"),
+                          ),
+                        );
+                      }
+                    : null, // Disable button if no selection
+                child: Text("Next"),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
