@@ -1,382 +1,212 @@
-class MyPickUp extends StatefulWidget {
-  const MyPickUp({super.key});
+class ScheduleModel {
+  int? orderItemsID;
+  String? pickupDate;
+  String? startTime;
+  String? endTime;
+  List<ScheduleItem>? scheduleItems; // Add this line
+  int? unitId;
+  String? totWeight;
+  String? notes;
+  int? addressId;
+  String? status;
 
-  @override
-  State<MyPickUp> createState() => _MyPickUpState();
+  ScheduleModel({
+    this.orderItemsID,
+    this.pickupDate,
+    this.startTime,
+    this.endTime,
+    this.scheduleItems, // Add this line
+    this.unitId,
+    this.totWeight,
+    this.notes,
+    this.addressId,
+    this.status,
+  });
+
+  ScheduleModel.from(Map<String, dynamic> map)
+      : orderItemsID = map['schedules_id'],
+        pickupDate = map['pickup_date'],
+        startTime = map['start_time'],
+        endTime = map['end_time'],
+        scheduleItems = (map['schedule_items'] as List)
+            .map((item) => ScheduleItem.from(item))
+            .toList(), // Parse schedule items
+        unitId = map['unit_id'],
+        totWeight = map['est_weight'],
+        notes = map['note'],
+        addressId = map['address_id'],
+        status = map['status'];
+
+  Map<String, Object?> toMap() {
+    return {
+      'schedules_id': orderItemsID,
+      'pickup_date': pickupDate,
+      'start_time': startTime,
+      'end_time': endTime,
+      'schedule_items': scheduleItems?.map((item) => item.toMap()).toList(), // Convert schedule items to map
+      'unit_id': unitId,
+      'est_weight': totWeight,
+      'note': notes,
+      'address_id': addressId,
+      'status': status,
+    };
+  }
 }
 
-class _MyPickUpState extends State<MyPickUp> with SingleTickerProviderStateMixin {
-  TabController? _tabController;
-  List<dynamic> allPickups = [];
+class ScheduleItem {
+  int? scheduleItemsID;
+  int? productId;
+  String? productName;
+  String? estWeight;
+  String? note;
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    fetchPickups();
+  ScheduleItem({
+    this.scheduleItemsID,
+    this.productId,
+    this.productName,
+    this.estWeight,
+    this.note,
+  });
+
+  ScheduleItem.from(Map<String, dynamic> map)
+      : scheduleItemsID = map['schedule_items_id'],
+        productId = map['product_id'],
+        productName = map['product_name'],
+        estWeight = map['est_weight'],
+        note = map['note'];
+
+  Map<String, Object?> toMap() {
+    return {
+      'schedule_items_id': scheduleItemsID,
+      'product_id': productId,
+      'product_name': productName,
+      'est_weight': estWeight,
+      'note': note,
+    };
   }
+}
 
-  fetchPickups() async {
-    // Assuming you have a method to get the user ID
-    String userId = "your_user_id"; // Replace with actual user ID
-    allPickups = await getschedulepickup(userId);
-    setState(() {});
-  }
 
-  getschedulepickup(String user_id) async {
-    try {
-      var response = await http.get(Uri.parse(
-        '${constant.apiLocalName}/pickupHistory?user_id=$user_id',
-      ));
-      log(response.body);
-      if (response.statusCode == 200) {
-        var responseData = jsonDecode(response.body);
-        var pickupData = responseData['schedule_data'];
-        return pickupData;
-      } else {
-        throw Exception('Failed to Fetch Schedule pickup details: ${response.statusCode}');
-      }
-    } on Exception catch (e) {
-      print('Error during Fetch Schedule pickup details: $e');
-      rethrow;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        title: Text('My Pick Ups',
-          style: TextStyle(
-              fontSize: 18,
-              color: Colors.black,
-              fontWeight: FontWeight.w500,
-          ),),
-        centerTitle: true,
-        bottom: TabBar(
-          indicatorColor: Theme.of(context).primaryColor,
-          controller: _tabController,
-          tabs: [
-            Tab(text: 'Upcoming'),
-            Tab(text: 'Completed'),
-            Tab(text: 'Canceled'),
-          ],
+TextButton(
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PickUpDetails(
+          pickupId: pickup['schedules_id'].toString(),
+          startTime: pickup['start_time'].toString(),
+          endTime: pickup['end_time'].toString(),
+          date: pickup['pickup_date'].toString(),
+          notes: pickup['note'].toString(),
+          weight: pickup['est_weight'].toString(),
+          unitId: pickup['unit_id'].toString(),
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+    );
+  },
+  child: Text('View Details',
+    style: TextStyle(
+      color: index == 0 ? Colors.white : Theme.of(context).primaryColor,
+    ),
+  ),
+),
+
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+    appBar: myappbar(context, "Pick Up Details", true),
+    body: SingleChildScrollView(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          UpcomingPickUps(pickups: allPickups.where((pickup) => pickup['status'] == 'pending').toList()),
-          CompletedPickUps(pickups: allPickups.where((pickup) => pickup['status'] == 'complete').toList()),
-          CanceledPickUps(pickups: allPickups.where((pickup) => pickup['status'] == 'canceled').toList()),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 20),
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Text(
+                '${formatDate1(widget.scheduleModel.pickupDate)}',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Text(
+                '${widget.scheduleModel.startTime} - ${widget.scheduleModel.endTime}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+            child: Row(
+              children: [
+                MyMediumText(title: "Estimate Weight :", isBold: true, color: Colors.black),
+                Gap(20),
+                MyMediumText(
+                  title: "${widget.scheduleModel.totWeight} ${unitName}", // Adjust this line
+                  isBold: false,
+                  color: Colors.black,
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: MyMediumText(title: "Notes", isBold: true, color: Colors.black),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            height: 150,
+            width: double.infinity,
+            margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+            decoration: BoxDecoration(
+              color: Color(0xffE9E9E9),
+              border: Border.all(width: 2, color: Colors.white),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: MySmallText(title: "${widget.scheduleModel.notes}"),
+            ),
+          ),
+          SizedBox(height: 15),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              MyEvalutedButton(
+                title: "Reschedule",
+                onPressed: () {
+                  // Handle reschedule action
+                },
+              ),
+              MyEvalutedButton(
+                title: "Cancel",
+                onPressed: () {
+                  // Handle cancel action
+                },
+              ),
+            ],
+          ),
         ],
       ),
-    );
-  }
+    ),
+  );
 }
-
-class UpcomingPickUps extends StatelessWidget {
-  final List<dynamic> pickups;
-
-  UpcomingPickUps({required this.pickups});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: pickups.length,
-      itemBuilder: (context, index) {
-        final pickup = pickups[index];
-        return Padding(
-          padding: const EdgeInsets.all(4.0),
-          child: Card(
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  width: 0.5,
-                  color: index == 0 ? Theme.of(context).primaryColor : Colors.grey,
-                ),
-                color: index == 0 ? Theme.of(context).primaryColor : Theme.of(context).scaffoldBackgroundColor,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Upcoming',
-                          style: TextStyle(color: index == 0 ? Colors.white : Theme.of(context).shadowColor),
-                        ),
-                        Text(
-                          '${pickup['schedules_id']}',
-                          style: TextStyle(color: index == 0 ? Colors.white : Theme.of(context).primaryColor),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16.0), child: Align(
-                    alignment: Alignment.topLeft,
-                    child: MyBigText(title: '${formatDate(pickup[' pickup_date'])}', color: index == 0 ? Colors.white : Theme.of(context).primaryColor),
-                    ),
-                  ),
-                  Divider(
-                    color: index == 0 ? Colors.white : Colors.grey[300],
-                    thickness: 2,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        MyTextButton(
-                          title: 'Reschedule',
-                          onPressed: () {
-                            // Implement reschedule functionality
-                          },
-                          color: Theme.of(context).shadowColor,
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            // Implement view details functionality
-                          },
-                          child: Text('View Details',
-                            style: TextStyle(
-                              color: index == 0 ? Colors.white : Theme.of(context).primaryColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class CompletedPickUps extends StatelessWidget {
-  final List<dynamic> pickups;
-
-  CompletedPickUps({required this.pickups});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: pickups.length,
-      itemBuilder: (context, index) {
-        final pickup = pickups[index];
-        return Padding(
-          padding: const EdgeInsets.all(4.0),
-          child: Card(
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  width: 0.5,
-                  color: index == 0 ? Theme.of(context).primaryColor : Colors.grey,
-                ),
-                color: index == 0 ? Theme.of(context).primaryColor : Theme.of(context).scaffoldBackgroundColor,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Completed',
-                          style: TextStyle(color: index == 0 ? Colors.white : Theme.of(context).shadowColor),
-                        ),
-                        Text(
-                          '${pickup['schedules_id']}',
-                          style: TextStyle(color: index == 0 ? Colors.white : Theme.of(context).primaryColor),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16.0), child: Align(
-                    alignment: Alignment.topLeft,
-                    child: Text('${formatDate(pickup['pickup_date'])}',
-                      style: TextStyle(fontSize: 20, color: index == 0 ? Colors.white : Theme.of(context).primaryColor),
-                    ),
-                  ),
-                  ),
-                  Divider(
-                    color: index == 0 ? Colors.white : Colors.grey[300],
-                    thickness: 2,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10,horizontal: 16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).shadowColor,
-                          ),
-                          child: TextButton(
-                            onPressed: () {
-                              // Implement reschedule functionality
-                            },
-                            child: MySmallText(title: 'Reschedule', color: Colors.white,),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            // Implement view details functionality
-                          },
-                          child: Text('View Details',
-                            style: TextStyle(
-                              color: index == 0 ? Colors.white : Theme.of(context).primaryColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class CanceledPickUps extends StatelessWidget {
-  final List<dynamic> pickups;
-
-  CanceledPickUps({required this.pickups});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: pickups.length,
-      itemBuilder: (context, index) {
-        final pickup = pickups[index];
-        return Padding(
-          padding: const EdgeInsets.all(4.0),
-          child: Card(
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  width: 0.5,
-                  color: index == 0 ? Theme.of(context).primaryColor : Colors.grey,
-                ),
-                color: index == 0 ? Theme.of(context).primaryColor : Theme.of(context).scaffoldBackgroundColor,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Canceled',
-                          style: TextStyle(color: index == 0 ? Colors.white : Theme.of(context).shadowColor),
-                        ),
-                        Text(
-                          '${pickup['schedules_id']}',
-                          style: TextStyle(color: index == 0 ? Colors.white : Theme.of(context).primaryColor),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16.0), child: Align(
-                    alignment: Alignment.topLeft,
-                    child: Text('${formatDate(pickup['pickup_date'])}',
-                      style: TextStyle(fontSize: 20, color: index == 0 ? Colors.white : Theme.of(context).primaryColor),
-                    ),
-                  ),
-                  ),
-                  Divider(
-                    color: index == 0 ? Colors.white : Colors.grey[300],
-                    thickness: 2,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10,horizontal: 16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).shadowColor,
-                          ),
-                          child: TextButton(
-                            onPressed: () {
-                              // Implement reschedule functionality
-                            },
-                            child: MySmallText(title: 'Reschedule', color: Colors.white,),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            // Implement view details functionality
-                          },
-                          child: Text('View Details',
-                            style: TextStyle(
-                              color: index == 0 ? Colors.white : Theme.of(context).primaryColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-} ```dart
-// The code above has been updated to filter the pickup data based on their status.
-// Ensure that the `CanceledPickUps` class is also updated to handle the canceled status if needed.
-
-class MyPickUp extends StatefulWidget {
-  const MyPickUp({super.key});
-
-  @override
-  State<MyPickUp> createState() => _MyPickUpState();
-}
-
-class _MyPickUpState extends State<MyPickUp> with SingleTickerProviderStateMixin {
-  TabController? _tabController;
-  List<dynamic> allPickups = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    fetchPickups();
-  }
-
-  fetchPickups() async {
-    String userId = "your_user_id"; // Replace with actual user ID
-    allPickups = await getschedulepickup(userId);
-    setState(() {});
-  }
-
-  getschedulepickup(String user_id) async {
-    try {
-      var response = await http.get(Uri.parse(
-        '${constant.apiLocalName}/pickupHistory?user_id=$user_id',
-      ));
