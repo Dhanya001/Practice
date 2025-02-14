@@ -1,68 +1,49 @@
-Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (context) => UpdateProfileScreen(
-      studentModel: widget.studentModel,
-      std: widget.std,
-      studentId: widget.studentId,
-    ),
-  ),
-).then((updatedData) {
-  if (updatedData != null) {
+void incrementQuantity(int index) {
+  if (mounted) {
+    int currentQty = quantityControllers[index].text.isEmpty ? 0 : int.parse(quantityControllers[index].text);
     setState(() {
-      // Assuming updatedData is a Map<String, dynamic>
-      widget.studentModel = StudentModel.fromJson(updatedData);
+      quantityControllers[index].text = (currentQty + 1).toString();
+      handleQuantityChange(index, quantityControllers[index].text);
     });
   }
-});
-
-if (response['success'] == true) {
-  var studentUpdatedData =
-      await GlobalHelper().getStudentInfo(context, widget.studentId!);
-  
-  // Pass the updated data back to the ProfileScreen
-  Navigator.pop(context, studentUpdatedData);
 }
 
-Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (context) => UpdateProfileScreen(
-      studentModel: widget.studentModel,
-      std: widget.std,
-      studentId: widget.studentId,
-    ),
-  ),
-).then((updatedData) {
-  if (updatedData != null) {
+void decrementQuantity(int index) {
+  if (mounted) {
+    int currentQty = quantityControllers[index].text.isEmpty ? 0 : int.parse(quantityControllers[index].text);
+    if (currentQty > 0) {
+      setState(() {
+        quantityControllers[index].text = (currentQty - 1).toString();
+        handleQuantityChange(index, quantityControllers[index].text);
+      });
+    }
+  }
+
+  void handleQuantityChange(int index, String value) {
+  if (mounted) {
     setState(() {
-      // Update the studentModel with the new data
-      widget.studentModel = updatedData;
+      if (value.isNotEmpty) {
+        double unitPrice = double.parse(inputDependentList[index]['unit_price']); // Use inputDependentList
+        int qty = int.parse(value);
+        double totalPrice = unitPrice * qty;
+        itemCardTotals[index] = totalPrice.toStringAsFixed(2);
+      } else {
+        itemCardTotals[index] = '0';
+      }
     });
   }
-});
-
-// In ProfileScreen
-Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (context) => UpdateProfileScreen(
-      studentModel: widget.studentModel,
-      std: widget.std,
-      studentId: widget.studentId,
-    ),
-  ),
-).then((updatedData) {
-  if (updatedData != null) {
-    setState(() {
-      widget.studentModel = updatedData; // Update the model with new data
-    });
-  }
-});
-
-// In UpdateProfileScreen
-if (response['success'] == true) {
-  var studentUpdatedData =
-      await GlobalHelper().getStudentInfo(context, widget.studentId!);
-  Navigator.pop(context, studentUpdatedData); // Pass updated data back
 }
+
+  setState(() {
+  if (newProducts.length < 100) {
+    hasMore = false;
+  }
+  currentPage++;
+  listData = [];
+  listData.addAll(newProducts);
+  inputDependentList = listData;
+
+  // Initialize quantityControllers and itemCardTotals based on the new list
+  quantityControllers = List.generate(newProducts.length, (index) => TextEditingController());
+  itemCardTotals = List.generate(newProducts.length, (index) => '0');
+});
