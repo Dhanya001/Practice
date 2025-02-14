@@ -47,3 +47,30 @@ void decrementQuantity(int index) {
   quantityControllers = List.generate(newProducts.length, (index) => TextEditingController());
   itemCardTotals = List.generate(newProducts.length, (index) => '0');
 });
+
+
+
+  void updateFilterList() {
+  if (mounted) {
+    setState(() {
+      if (searchVal.isEmpty && brandVal.isEmpty && formatVal.isEmpty && variantVal.isEmpty) {
+        // Reset quantities and totals when all filters are cleared
+        for (int i = 0; i < quantityControllers.length; i++) {
+          quantityControllers[i].clear(); // Clear the quantity controllers
+          itemCardTotals[i] = '0'; // Reset total price
+        }
+        inputDependentList = newList; // Reset the input dependent list
+      } else {
+        // Filtering logic
+        inputDependentList = newList.where((element) {
+          // Apply your filtering conditions here
+          bool matchesSearch = element['name'].toString().toLowerCase().contains(searchVal.toLowerCase());
+          bool matchesBrand = element['brand_name'].toString().toLowerCase().startsWith(brandVal.toLowerCase());
+          bool matchesFormat = element['format_name'].toString().toLowerCase().startsWith(formatVal.toLowerCase());
+          bool matchesVariant = element['variant_name'].toString().toLowerCase().contains(variantVal.toLowerCase());
+          return matchesSearch && matchesBrand && matchesFormat && matchesVariant;
+        }).toList();
+      }
+    });
+  }
+}
