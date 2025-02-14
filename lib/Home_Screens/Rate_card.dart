@@ -74,3 +74,36 @@ void decrementQuantity(int index) {
     });
   }
 }
+void updateFilterList() {
+  if (mounted) {
+    setState(() {
+      if (searchVal.isEmpty && brandVal.isEmpty && formatVal.isEmpty && variantVal.isEmpty) {
+        // Reset quantities and totals when all filters are cleared
+        for (int i = 0; i < quantityControllers.length; i++) {
+          quantityControllers[i].clear(); // Clear the quantity controllers
+          itemCardTotals[i] = '0'; // Reset total price
+        }
+        inputDependentList = newList; // Reset the input dependent list
+      } else {
+        // Filtering logic
+        List filteredList = newList.where((element) {
+          bool matchesSearch = element['name'].toString().toLowerCase().contains(searchVal.toLowerCase());
+          bool matchesBrand = element['brand_name'].toString().toLowerCase().startsWith(brandVal.toLowerCase());
+          bool matchesFormat = element['format_name'].toString().toLowerCase().startsWith(formatVal.toLowerCase());
+          bool matchesVariant = element['variant_name'].toString().toLowerCase().contains(variantVal.toLowerCase());
+          return matchesSearch && matchesBrand && matchesFormat && matchesVariant;
+        }).toList();
+
+        // Reset quantities for products that are not in the filtered list
+        for (int i = 0; i < inputDependentList.length; i++) {
+          if (!filteredList.contains(inputDependentList[i])) {
+            quantityControllers[i].clear(); // Clear the quantity controllers for non-matching products
+            itemCardTotals[i] = '0'; // Reset total price for non-matching products
+          }
+        }
+
+        inputDependentList = filteredList; // Update the input dependent list
+      }
+    });
+  }
+}
