@@ -1,94 +1,65 @@
-void showCancelRemarkDialog(
-  BuildContext context,
-  String title, {
-  Icon? icon,
-  Function? onConfirm,
-  TextEditingController? remarkController, // Add this parameter
-}) {
-  showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: Text(title),
-        content: Container(
-          margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xffE9E9E9),
-            border: Border.all(width: 2, color: Colors.white),
-            borderRadius: BorderRadius.circular(16),
+import 'package:flutter/material.dart';
+import 'package:dotted_line/dotted_line.dart';
+
+class DateLocationRow extends StatelessWidget {
+  const DateLocationRow({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade400,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          // Time Section
+          Column(
+            children: [
+              Icon(Icons.access_time, color: Colors.white),
+              SizedBox(height: 4),
+              Text('24 - 04 - 2025',
+                  style: TextStyle(color: Colors.white, fontSize: 12)),
+              Text('Evening',
+                  style: TextStyle(color: Colors.white70, fontSize: 12)),
+            ],
           ),
-          child: TextFormField(
-            controller: remarkController, // Set the controller here
-            autofocus: true,
-            decoration: const InputDecoration(
-              contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-              hintText: "Enter Remark",
-              border: InputBorder.none,
-            ),
-            maxLines: 2,
-          ),
-        ),
-        actions: [
-          Container(
-            color: primaryColor,
-            child: TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                if (onConfirm != null && remarkController != null) {
-                  onConfirm(remarkController.text); // Pass the entered remark
-                }
-              },
-              child: Text(
-                'Yes',
-                style: TextStyle(color: Colors.white),
-              ),
+
+          // Dotted Line with Circle
+          Expanded(
+            child: Column(
+              children: [
+                DottedLine(
+                  dashColor: Colors.white,
+                  lineThickness: 1.5,
+                ),
+                SizedBox(height: 6),
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
             ),
           ),
-          Container(
-            color: Colors.red,
-            child: TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                'No',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
+
+          // Location Section
+          Column(
+            children: [
+              Icon(Icons.location_on, color: Colors.white),
+              SizedBox(height: 4),
+              Text('Sector 22,',
+                  style: TextStyle(color: Colors.white, fontSize: 12)),
+              Text('Kalyan',
+                  style: TextStyle(color: Colors.white70, fontSize: 12)),
+            ],
           ),
         ],
-      );
-    },
-  );
-}
-MyEvalutedButton(
-  title: "Cancel",
-  onPressed: () async {
-    TextEditingController remarkController = TextEditingController(); // Initialize the controller
-
-    constants.showCancelRemarkDialog(
-      context,
-      'Schedule cancel',
-      remarkController: remarkController, // Pass the controller
-      onConfirm: (remark) async { // This is where the entered remark is accessed
-        print("Entered Remark: $remark"); // Print the remark
-
-        constants.showLoading(context);
-        try {
-          var response = await GlobalHelper().cancelSchedule(
-            widget.scheduleMap['schedules_id'].toString(),
-          );
-          if (response['success'] == true) {
-            Navigator.pop(context);
-            Navigator.pop(context);
-            Navigator.push(context, MaterialPageRoute(builder: (context) => MyPickUp()));
-          } else {
-            print('Failed to cancel schedule pickup');
-          }
-        } catch (e) {
-          print('Error cancel scheduling pickup: $e');
-        }
-      },
+      ),
     );
-  },
-)
+  }
+}
