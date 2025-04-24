@@ -72,3 +72,111 @@ Widget build(BuildContext context) {
     ),
   );
 }
+
+
+class MenuItem {
+  final String title;
+  final String iconPath;
+  final String route;
+  final String defaultIconPath; // New property for default icon
+
+  MenuItem({
+    required this.title,
+    required this.iconPath,
+    required this.route,
+    required this.defaultIconPath, // Initialize the default icon
+  });
+
+  factory MenuItem.fromJson(Map<String, dynamic> json) {
+    return MenuItem(
+      title: json['title'],
+      iconPath: json['iconPath'],
+      route: json['route'],
+      defaultIconPath: json['defaultIconPath'] ?? 'assets/icons/default_icon.png', // Provide a default if not present
+    );
+  }
+}
+
+class DrawerMenu extends StatelessWidget {
+  final String title;
+  final String? path;
+  final String? subtitle;
+  final String? tileColor;
+  final IconData iconData;
+  final Color? myColors;
+  final Color? myIconColors;
+  final VoidCallback? callback;
+  final String defaultIconPath; // New property for default icon path
+
+  DrawerMenu({
+    super.key,
+    required this.title,
+    required this.iconData,
+    this.subtitle,
+    this.tileColor,
+    this.myColors = Colors.black,
+    this.myIconColors = Colors.black,
+    this.callback,
+    this.path,
+    required this.defaultIconPath, // Initialize the default icon path
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        if (callback != null) {
+          callback!();
+        }
+      },
+      child: Container(
+        height: 50,
+        child: ListTile(
+          tileColor: tileColor != null ? HexColor(tileColor!) : null,
+          leading: path == null
+              ? Icon(
+                  iconData,
+                  color: myIconColors,
+                  size: 20,
+                )
+              : SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: Image.network(
+                    path!,
+                    fit: BoxFit.fill,
+                    errorBuilder: (context, error, stackTrace) {
+                      // Return the default icon if the image fails to load
+                      return Image.asset(
+                        defaultIconPath, // Use the default icon path
+                        fit: BoxFit.fill,
+                      );
+                    },
+                  ),
+                ),
+          title: MyTextSmall(
+            title: title,
+            color: myColors!,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Expanded(
+  child: ListView.builder(
+    itemCount: menuItems.length,
+    itemBuilder: (context, index) {
+      final item = menuItems[index];
+      return DrawerMenu(
+        title: item.title,
+        path: item.iconPath,
+        defaultIconPath: item.defaultIconPath, // Pass the default icon path
+        callback: () {
+          Navigator.pushNamed(context, item.route); // Navigate to the route
+        },
+        iconData: Icons.menu, // You can customize this based on your API response
+      );
+    },
+  ),
+),
