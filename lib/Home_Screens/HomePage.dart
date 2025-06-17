@@ -1,53 +1,89 @@
-import 'package:phonepe_payment_sdk/phonepe_payment_sdk.dart';
+  Future<void> checkAuth() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final bool isAuthEnabled = prefs.getBool('isAuth') ?? false;
 
-void initPhonePeSdk() {
-  PhonePePaymentSdk.init(
-    environmentValue, // 'SANDBOX' or 'PRODUCTION'
-    merchantId,
-    flowId, // Unique identifier for the transaction flow
-    enableLogs,
-  ).then((isInitialized) {
-    setState(() {
-      result = 'PhonePe SDK Initialized - $isInitialized';
-    });
-  }).catchError((error) {
-    handleError(error);
-  });
-}
-void startTransaction() {
-  PhonePePaymentSdk.startTransaction(
-    request, // Base64 encoded request payload
-    appSchema, // Your app's URL scheme
-  ).then((response) {
-    setState(() {
-      if (response != null) {
-        String status = response['status'].toString();
-        String error = response['error'].toString();
-        if (status == 'SUCCESS') {
-          result = "Flow Completed - Status: Success!";
-        } else {
-          result = "Flow Completed - Status: $status and Error: $error";
-        }
+    final bool canAuthWithBiometrics = await auth.canCheckBiometrics;
+    final List<BiometricType> availableBiometrics = await auth.getAvailableBiometrics();
+    print('Available biometrics: $availableBiometrics');
+    print('Can authenticate with biometrics: $canAuthWithBiometrics');
+
+    if (!canAuthWithBiometrics) {
+      print('Biometrics not available');
+      SystemNavigator.pop();
+      return;
+    }
+
+    if (isAuthEnabled) {
+      authenticateUser ();
+    } else {
+      checkIsLogin();
+    }
+  }  
+
+Future<void> authenticateUser() async {
+    try {
+      print('auth false');
+      final bool didAuthenticate = await auth.authenticate(
+        localizedReason: 'Please authenticate to access the app',
+        options: AuthenticationOptions(
+          biometricOnly: false,
+          stickyAuth: true,
+        ),
+      );
+
+      if (didAuthenticate) {
+        checkIsLogin();
       } else {
-        result = "Flow Incomplete";
+          SystemNavigator.pop();
+          if (!isAuthDialogShown) {
+            isAuthDialogShown = true;
+            showDialog(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  title: MyTextSmall(title: 'Authentication Failed',fontWeight: FontWeight.bold,),
+                  content: MyTextMini(title: 'Please try again.'),
+                  actions: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: TextButton(
+                        onPressed: () {
+                          isAuthDialogShown = false;
+                          Navigator.of(context).pop();
+                          authenticateUser ();
+                        },
+                        child: MyTextMini(title: 'Retry',color: Colors.white,),
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: TextButton(
+                        onPressed: () {
+                          isAuthDialogShown = false;
+                          SystemNavigator.pop();
+                        },
+                        child: MyTextMini(title: 'Exit',color: Colors.white,),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          }
       }
-    });
-  }).catchError((error) {
-    handleError(error);
-  });
-}
-import 'dart:convert';
+    } catch (e) {
+      print('Error during authentication: $e');
+      // Navigator.of(context).pushReplacement(
+      //     MaterialPageRoute(builder: (context) => const LogInScreen()));
+    }
 
-Map<String, dynamic> requestPayload = {
-  "merchantId": merchantId,
-  "merchantTransactionId": "MT123456789",
-  "merchantUserId": "MU123456789",
-  "amount": 10000, // Amount in paise (e.g., 10000 paise = ₹100)
-  "callbackUrl": "https://yourcallbackurl.com",
-  "mobileNumber": "9999999999",
-  "paymentInstrument": {
-    "type": "PAY_PAGE",
-  }
-};
-
-String request = base64Encode(utf8.encode(jsonEncode(requestPayload)));
+Error during authentication: PlatformException(NotAvailable, Security credentials not available., null, null)
+clear shared preference
+then called Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LogInScreen()));
