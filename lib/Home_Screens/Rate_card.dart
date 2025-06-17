@@ -99,3 +99,36 @@ void showFailedDialog() {
     );
   }
 }
+Future<void> checkAuth() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final bool isAuthEnabled = prefs.getBool('isAuth') ?? false;
+
+  final bool isDeviceSupported = await auth.isDeviceSupported();
+  final bool canAuthWithBiometrics = await auth.canCheckBiometrics;
+
+  print('isAuth: $isAuthEnabled');
+  print('isDeviceSupported: $isDeviceSupported');
+  print('canCheckBiometrics: $canAuthWithBiometrics');
+
+  if (isAuthEnabled) {
+    // isAuth is true
+    if (isDeviceSupported && canAuthWithBiometrics) {
+      // Auth supported → proceed with biometric
+      await authenticateUser();
+    } else {
+      // Auth required but device not supported → open login screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const LogInScreen()),
+      );
+    }
+  } else {
+    // isAuth is false
+    if (!isDeviceSupported || !canAuthWithBiometrics) {
+      // No auth, and device can't authenticate → just continue to main app
+      checkIsLogin();
+    } else {
+      // Biometric supported but auth not enabled → still go to app directly
+      checkIsLogin();
+    }
+  }
+}
